@@ -4,14 +4,6 @@
 #include "circularBuffer.h"
 
 
-typedef struct
-{
-  unsigned char  head;
-  unsigned char  tail;
-  unsigned char  len;
-} CircularBufHdrType;
-
-
 /*
   vp: pointer to memory for new circular buffer
   len: size of memory
@@ -21,7 +13,7 @@ void CircularBufInit(void * vp, unsigned char len)
   CircularBufHdrType * p = (CircularBufHdrType *)vp;
   p->head=sizeof(CircularBufHdrType);
   p->tail=sizeof(CircularBufHdrType);
-  p->len=len;
+  p->len=len-sizeof(CircularBufHdrType);
 }
 
 
@@ -30,7 +22,9 @@ void CircularBufInit(void * vp, unsigned char len)
     vp: pointer to buffer
     v:  value to put in buffer
 */
-void CircularBufPush(void * vp, unsigned char v)
+void CircularBufWrite(void * vp, unsigned char v)
+CircularBufWrite_INLINE(vp,v)
+#if 0
 {
   CircularBufHdrType * p = (CircularBufHdrType *)vp;
   unsigned char x=p->head+1;
@@ -43,10 +37,9 @@ void CircularBufPush(void * vp, unsigned char v)
   {
     p->head=x;
     ((unsigned char*)p)[x]=v;
-  }  
-  
+  }    
 }
-
+#endif
 
 /*
   Get oldest item from buffer:
@@ -54,7 +47,7 @@ void CircularBufPush(void * vp, unsigned char v)
    return:  >=0 : oldest item
             <0  : error (not a buffer item)
 */
-int CircularBufPop(void * vp)
+int CircularBufRead(void * vp)
 {
   CircularBufHdrType * p = (CircularBufHdrType *)vp;
 
@@ -73,4 +66,9 @@ int CircularBufPop(void * vp)
   }
   return -1;
 }
+
+
+
+
+
 
