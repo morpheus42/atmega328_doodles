@@ -23,23 +23,9 @@ void CircularBufInit(void * vp, unsigned char len)
     v:  value to put in buffer
 */
 void CircularBufWrite(void * vp, unsigned char v)
-CircularBufWrite_INLINE(vp,v)
-#if 0
 {
-  CircularBufHdrType * p = (CircularBufHdrType *)vp;
-  unsigned char x=p->head+1;
-
-  if (x>=p->len)
-  {
-    x=sizeof(CircularBufHdrType);
-  }
-  if (p->tail!=x)
-  {
-    p->head=x;
-    ((unsigned char*)p)[x]=v;
-  }    
+  CircularBufWrite_INLINE(vp,v);
 }
-#endif
 
 /*
   Get oldest item from buffer:
@@ -47,26 +33,10 @@ CircularBufWrite_INLINE(vp,v)
    return:  >=0 : oldest item
             <0  : error (not a buffer item)
 */
-int CircularBufRead(void * vp)
+uint8_t CircularBufRead(void * vp)
 {
-  CircularBufHdrType * p = (CircularBufHdrType *)vp;
-
-  if (p->head!=p->tail)
-  {
-    unsigned char x = p->tail;
-    unsigned char dat = ((unsigned char*)p)[x];
-    
-    x++;
-    if (x>=p->len)
-    {
-      x=sizeof(CircularBufHdrType);
-    }
-    p->tail=x;
-    return dat;
-  }
-  return -1;
+  return CircularBufRead_INLINE(vp);
 }
-
 
 
 

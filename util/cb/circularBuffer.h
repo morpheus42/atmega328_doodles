@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+#include "stdint.h"
 
 typedef struct
 {
@@ -16,7 +17,7 @@ typedef struct
 } CircularBufHdrType;
 
 
-#define M_CircularBufferCalcRequiredMemorySizeForBuffer(size)  (size+3)
+#define M_CircularBufferCalcRequiredMemorySizeForBuffer(size) (size+3)
 
 
 /*
@@ -35,19 +36,20 @@ void CircularBufInit(void * vp, unsigned char len);
 */
 void CircularBufWrite(void * vp, unsigned char v);
 
-#define CircularBufWrite_INLINE( vp, v ) { \
-  CircularBufHdrType * p = (CircularBufHdrType *)vp;     \
-  unsigned char x=p->head+1;                             \
-                                                         \
-  if (x>=p->len)                                         \
-  {                                                      \
-    x=sizeof(CircularBufHdrType);                        \
-  }                                                      \
-  if (p->tail!=x)                                        \
-  {                                                      \
-    p->head=x;                                           \
-    ((unsigned char*)p)[x]=v;                            \
-  }                                                      \
+extern inline void CircularBufWrite_INLINE(void * vp, unsigned char v)
+{
+  CircularBufHdrType * p = (CircularBufHdrType *)vp;
+  unsigned char x=p->head+1;
+
+  if (x>=p->len)
+  {
+    x=sizeof(CircularBufHdrType);
+  }
+  if (p->tail!=x)
+  {
+    p->head=x;
+    ((unsigned char*)p)[x]=v;
+  }    
 }
 
 
@@ -57,7 +59,36 @@ void CircularBufWrite(void * vp, unsigned char v);
    return:  >=0 : oldest item
             <0  : error (not a buffer item)
 */
-int CircularBufRead(void * vp);
+uint8_t CircularBufRead(void * vp);
+
+
+extern inline char CircularBufNotEmpty_INLINE(void * vp)
+{
+  CircularBufHdrType * p = (CircularBufHdrType *)vp;
+
+  return (p->head-p->tail);
+}
+
+
+extern inline uint8_t CircularBufRead_INLINE(void * vp)
+{
+  CircularBufHdrType * p = (CircularBufHdrType *)vp;
+
+  if (p->head!=p->tail)
+  {
+    unsigned char x = p->tail;
+    unsigned char dat = ((unsigned char*)p)[x];
+    
+    x++;
+    if (x>=p->len)
+    {
+      x=sizeof(CircularBufHdrType);
+    }
+    p->tail=x;
+    return dat;
+  }
+  return 0;
+}
 
 
 

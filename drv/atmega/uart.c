@@ -1,7 +1,7 @@
 /*
  */
 
-//#include "config.h"
+#include "config.h"
 //#include "board.h"
 #include <avr/interrupt.h>
 #include <avr/io.h>
@@ -19,16 +19,17 @@
 #endif
 
 #ifndef UART0_TX
-#define UART0_TX(p) 0x55
+#define UART0_TX() 0x55
+#endif
+
+#ifndef UART0_TXQNE
+#define UART0_TXQNE() 1
 #endif
 
 
 
-
-
-
-ISR(USART_TX_vect)
-//ISR(USART_RX_vect)
+//ISR(USART_TX_vect)
+ISR(USART_RX_vect)
 {
   uint8_t stat;
   
@@ -50,14 +51,12 @@ ISR(USART_TX_vect)
 
 ISR(USART_UDRE_vect)
 {
-  short x;
 //  PORTB |= (1<<PB3);  
-    x=UART0_TX();
   
-    // if there is data then send it
-    if (x>=0)
-    {
-      UDR0 = x;
+    
+    if (UART0_TXQNE())
+    { // if there is data then send it
+      UDR0 = UART0_TX();
     } 
     else
     {
