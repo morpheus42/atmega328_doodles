@@ -28,7 +28,6 @@
 
 
 
-//ISR(USART_TX_vect)
 ISR(USART_RX_vect)
 {
   uint8_t stat;
@@ -48,19 +47,23 @@ ISR(USART_RX_vect)
 }
 
 
+ISR(USART_TX_vect)
+{
+    UDR0 = 'y';
+}
+
 
 ISR(USART_UDRE_vect)
 {
 //  PORTB |= (1<<PB3);  
   
-    
     if (UART0_TXQNE())
     { // if there is data then send it
       UDR0 = UART0_TX();
     } 
     else
     {
-       UCSR0B &= ~(1 << UDRIE0); // no more data to send, turn off data ready interrupt
+       UCSR0B &= ~SB(UDRIE0); // no more data to send, turn off data ready interrupt
     }
 //  PORTB &= ~(1<<PB3);
 }

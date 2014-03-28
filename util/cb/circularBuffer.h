@@ -34,23 +34,40 @@ void CircularBufInit(void * vp, unsigned char len);
     vp: pointer to buffer
     v:  value to put in buffer
 */
-void CircularBufWrite(void * vp, unsigned char v);
+uint8_t CircularBufWrite(void * vp, unsigned char v);
 
-extern inline void CircularBufWrite_INLINE(void * vp, unsigned char v)
+extern inline uint8_t CircularBufWrite_INLINE(void * vp, unsigned char v)
 {
   CircularBufHdrType * p = (CircularBufHdrType *)vp;
-  unsigned char x=p->head+1;
+  uint8_t x=p->head;
+  uint8_t y=x+1;
 
-  if (x>=p->len)
+  if (y>=p->len)
   {
-    x=sizeof(CircularBufHdrType);
+    y=sizeof(CircularBufHdrType);
   }
-  if (p->tail!=x)
+  if (p->tail!=y)
   {
-    p->head=x;
-    ((unsigned char*)p)[x]=v;
-  }    
+    ((uint8_t*)p)[x]=v;
+    p->head=y;
+    return 1;
+  }
+  return 0;
 }
+
+
+
+
+char CircularBufNotEmpty(void * vp);
+
+
+extern inline char CircularBufNotEmpty_INLINE(void * vp)
+{
+  CircularBufHdrType * p = (CircularBufHdrType *)vp;
+
+  return ((p->head)-(p->tail));
+}
+
 
 
 /*
@@ -59,16 +76,8 @@ extern inline void CircularBufWrite_INLINE(void * vp, unsigned char v)
    return:  >=0 : oldest item
             <0  : error (not a buffer item)
 */
+
 uint8_t CircularBufRead(void * vp);
-
-
-extern inline char CircularBufNotEmpty_INLINE(void * vp)
-{
-  CircularBufHdrType * p = (CircularBufHdrType *)vp;
-
-  return (p->head-p->tail);
-}
-
 
 extern inline uint8_t CircularBufRead_INLINE(void * vp)
 {
@@ -78,7 +87,7 @@ extern inline uint8_t CircularBufRead_INLINE(void * vp)
   {
     unsigned char x = p->tail;
     unsigned char dat = ((unsigned char*)p)[x];
-    
+
     x++;
     if (x>=p->len)
     {
@@ -87,7 +96,7 @@ extern inline uint8_t CircularBufRead_INLINE(void * vp)
     p->tail=x;
     return dat;
   }
-  return 0;
+  return '?';
 }
 
 

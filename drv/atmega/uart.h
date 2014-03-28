@@ -11,6 +11,8 @@
 #include <avr/interrupt.h>
 
 
+#define SB(p) (1<<p)
+
 
 extern inline void Uart0_SetBaudrate(uint32_t baud)
 {
@@ -37,13 +39,13 @@ extern inline void Uart0_SetFormat(uint8_t bpc, uint8_t parity, uint8_t stopbits
 
 extern inline void Uart0_StartTx( void )
 {
-  UCSR0B |= (1 << UDRIE0);
+  UCSR0B |= SB(UDRIE0);
 }
 
 extern inline void Uart0_Init( void )
 {
-  UCSR0A = 0x20;
-  UCSR0B = 0x98;
+  UCSR0A = 0x00;
+  UCSR0B = SB(RXCIE0)|SB(RXEN0)|SB(TXEN0);// 0x98;
 }
 
 

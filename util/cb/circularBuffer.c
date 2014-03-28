@@ -13,7 +13,15 @@ void CircularBufInit(void * vp, unsigned char len)
   CircularBufHdrType * p = (CircularBufHdrType *)vp;
   p->head=sizeof(CircularBufHdrType);
   p->tail=sizeof(CircularBufHdrType);
-  p->len=len-sizeof(CircularBufHdrType);
+  p->len=len;
+}
+
+
+
+
+char CircularBufNotEmpty(void * vp)
+{
+  return CircularBufNotEmpty_INLINE(vp);
 }
 
 
@@ -22,9 +30,9 @@ void CircularBufInit(void * vp, unsigned char len)
     vp: pointer to buffer
     v:  value to put in buffer
 */
-void CircularBufWrite(void * vp, unsigned char v)
+uint8_t CircularBufWrite(void * vp, unsigned char v)
 {
-  CircularBufWrite_INLINE(vp,v);
+  return CircularBufWrite_INLINE(vp,v);
 }
 
 /*

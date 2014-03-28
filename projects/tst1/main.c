@@ -1,15 +1,22 @@
 
 #include "uart.h"
-
 #include "circularBuffer.h"
+#include <avr/io.h>
+
+
+
+FUSES = 
+{
+    .low = 0xFF, //LFUSE_DEFAULT,
+    .high = 0xDA, //(FUSE_BOOTSZ0 & FUSE_BOOTSZ1 & FUSE_EESAVE & FUSE_SPIEN & FUSE_JTAGEN),
+    .extended = 0x05, //EFUSE_DEFAULT,
+};
+
+
+
 
 uint8_t uart0_in[M_CircularBufferCalcRequiredMemorySizeForBuffer(5)];
 uint8_t uart0_out[M_CircularBufferCalcRequiredMemorySizeForBuffer(5)];
-
-
-
-
-
 
 
 
@@ -110,16 +117,18 @@ ISR(ADC_vect)///, ISR_NAKED)
 
 int main(int argc, char * argv[])
 {
-  char count1;  
-
+  char count1;
+  
+  CircularBufInit(uart0_in,sizeof(uart0_in));
+  CircularBufInit(uart0_out,sizeof(uart0_out));
   
   Uart0_Init();
 //  Uart0_SetBaudrate(115200);
   Uart0_SetBaudrate(19200);
   Uart0_SetFormat(8,1,2);
- 
-  UDR0=0x55; 
- 
+  
+  sei();
+  
 #if 0
   DIDR0=0x01; //Disable digital input buffers of ADC analog input pins.
   DIDR1=0x03; //Disable digital input buffers of ACOMP analog input pins.
@@ -132,22 +141,41 @@ int main(int argc, char * argv[])
   setupADC();
 #endif
   
-
   count1 = 0;
 
+#if 1
+  CircularBufWrite(uart0_out,'2');
+  CircularBufWrite(uart0_out,'3');
+  CircularBufWrite(uart0_out,'4');
+  Uart0_StartTx();
+#endif  
+
+  
   while(1)
   {
-    if (CircularBufNotEmpty_INLINE(uart0_in))
+//    uint8_t qq = (uart0_in[0]+uart0_in[1]);
+    if (CircularBufNotEmpty(uart0_in))
     {
-      uint8_t c = CircularBufRead(uart0_in);
+      uint8_t c;
+
+//      CircularBufWrite(uart0_out,'a'+qq);
+
+      c = CircularBufRead(uart0_in);
       
       c^=0x20;
-      
-      CircularBufWrite(uart0_out,c);
+//      *(char*)(-1) = qq;
+      while(!CircularBufWrite(uart0_out,c));
       Uart0_StartTx();
       
     }
-  
+    else
+    {
+//      CircularBufWrite(uart0_out,'0'+qq-6);
+//      Uart0_StartTx();
+    }
+    
+//    while(CircularBufNotEmpty(uart0_out));
+
   //  dht11_start();
 
     
