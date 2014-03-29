@@ -13,7 +13,7 @@ MYPATH:=$(abspath .)
 PROJECT := tst1
 INCLUDEPATH:=$(MYPATH)
 SOURCEPATH:=$(MYPATH)
-SOURCEFILES := $(addprefix $(MYPATH)/, main.c)
+SOURCEFILES := $(addprefix $(MYPATH)/, main.c config.c)
 
 
 
@@ -28,6 +28,7 @@ include $(DEVROOT)/de/avr/Makefile.cfg
 
 include $(DEVROOT)/drv/atmega/uart.Makefile
 include $(DEVROOT)/util/cb/Makefile
+include $(DEVROOT)/svc/mudem/Makefile
 
 include $(DEVROOT)/tools/make/Makefile.inc
 

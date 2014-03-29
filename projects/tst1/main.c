@@ -2,21 +2,18 @@
 #include "uart.h"
 #include "circularBuffer.h"
 #include <avr/io.h>
+#include "mudem.h"
+#include "main.h"
 
-
-
-FUSES = 
-{
-    .low = 0xFF, //LFUSE_DEFAULT,
-    .high = 0xDA, //(FUSE_BOOTSZ0 & FUSE_BOOTSZ1 & FUSE_EESAVE & FUSE_SPIEN & FUSE_JTAGEN),
-    .extended = 0x05, //EFUSE_DEFAULT,
-};
 
 
 
 
 uint8_t uart0_in[M_CircularBufferCalcRequiredMemorySizeForBuffer(5)];
 uint8_t uart0_out[M_CircularBufferCalcRequiredMemorySizeForBuffer(5)];
+
+
+
 
 
 
@@ -153,29 +150,19 @@ int main(int argc, char * argv[])
   
   while(1)
   {
-//    uint8_t qq = (uart0_in[0]+uart0_in[1]);
-    if (CircularBufNotEmpty(uart0_in))
+    if (CircularBufNotEmpty_INLINE(uart0_in))
     {
       uint8_t c;
 
-//      CircularBufWrite(uart0_out,'a'+qq);
-
       c = CircularBufRead(uart0_in);
-      
+      mudem_ByteReceived(c);
+      #if 0
       c^=0x20;
-//      *(char*)(-1) = qq;
       while(!CircularBufWrite(uart0_out,c));
       Uart0_StartTx();
-      
-    }
-    else
-    {
-//      CircularBufWrite(uart0_out,'0'+qq-6);
-//      Uart0_StartTx();
+      #endif
     }
     
-//    while(CircularBufNotEmpty(uart0_out));
-
   //  dht11_start();
 
     
@@ -208,6 +195,22 @@ int main(int argc, char * argv[])
     
   }
   
+}
+
+
+void main_Recv1(uint8_t b)
+{
+      CircularBufWrite(uart0_out,'R');
+      CircularBufWrite(uart0_out,b);
+      Uart0_StartTx();
+}
+
+
+void main_Ctrl1(uint8_t b)
+{
+      CircularBufWrite(uart0_out,'C');
+      CircularBufWrite(uart0_out,b);
+      Uart0_StartTx();
 }
 
 /*---------------------------------------------------------------------------*/

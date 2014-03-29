@@ -1,9 +1,9 @@
-ifndef UTIL_CB_MAKEFILE
-UTIL_CB_MAKEFILE=1
+ifndef SVC_MUDEM_MAKEFILE
+SVC_MUDEM_MAKEFILE=1
 MYDIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 
-SOURCEFILES+=$(addprefix $(MYDIR)/, circularBuffer.c)
+SOURCEFILES+=$(addprefix $(MYDIR)/, mudem.c)
 INCLUDEPATH+=$(MYDIR)
 SOURCEPATH+=$(MYDIR)
 MODULES+=$(MYDIR)/Makefile
