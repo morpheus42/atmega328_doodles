@@ -63,7 +63,7 @@ char CircularBufNotEmpty(void * vp);
 
 extern inline char CircularBufNotEmpty_INLINE(void * vp)
 {
-  CircularBufHdrType * p = (CircularBufHdrType *)vp;
+  volatile CircularBufHdrType * p = (CircularBufHdrType *)vp;
 
   return ((p->head)-(p->tail));
 }
