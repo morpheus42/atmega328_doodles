@@ -18,8 +18,8 @@ FUSES =
 
 mudem_channel_t mudem_channels[8]=
 {
-  {NULL,NULL},
-  {main_Recv1,main_Ctrl1},
+  {dbg_Recv,dbg_Txd},
+  {main_Recv,main_Txd},
   {NULL,NULL},
   {NULL,NULL},
   {NULL,NULL},

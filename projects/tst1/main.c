@@ -150,17 +150,20 @@ int main(int argc, char * argv[])
   
   while(1)
   {
+    uint16_t w;
+    
     if (CircularBufNotEmpty_INLINE(uart0_in))
     {
       uint8_t c;
 
       c = CircularBufRead(uart0_in);
       mudem_ByteReceived(c);
-      #if 0
-      c^=0x20;
-      while(!CircularBufWrite(uart0_out,c));
+    }
+    
+    while ( CircularBufNotFull_INLINE(uart0_out) && (w = mudem_GetOut()))
+    {
+      CircularBufWrite(uart0_out,w);
       Uart0_StartTx();
-      #endif
     }
     
   //  dht11_start();
@@ -198,19 +201,181 @@ int main(int argc, char * argv[])
 }
 
 
-void main_Recv1(uint8_t b)
+
+
+
+/*
+0x01,  //dst address
+0x01,  //msglen
+0x01,  //src address
+0x01,  //dst port
+0x01,  //src port
+  0x01,  //[ resp | ack | err | 0 | act | 3*adrlen ]
+  0x01,  //[  4 * getlen  | 4 * setlen ]
+  0x0n,  //adr
+  0x0m,  //setdat
+0x01,  //checksum
+*/
+
+
+
+static uint8_t devdat[2];
+
+
+static uint8_t recvPos=0;
+static uint8_t msgLen=0;
+static uint8_t srcAdr=0x41;
+static uint8_t srcPort=0;
+static uint8_t len1=0;
+static uint8_t len2=0;
+static uint8_t adr=0;
+
+
+
+static uint8_t outPos=0;
+
+uint16_t main_Txd(void)
 {
-      CircularBufWrite(uart0_out,'R');
-      CircularBufWrite(uart0_out,b);
-      Uart0_StartTx();
+  uint8_t c;
+  
+  if (outPos<=9)
+  {
+    switch (outPos)
+    {
+      case 0:
+        c=srcAdr;
+        break;
+      case 1:
+        c=8;
+        break;
+      case 2:
+        c=0x40;
+        break;
+      case 3:
+        c=srcPort;
+        break;
+      case 4:
+        c=0x40;
+        break;
+      case 5:
+        c=len1|0x80;
+        break;
+      case 6:
+        c=len2>>4;
+        break;
+      case 7:
+        c=adr;
+        break;
+      case 8:
+        if (len2&0x0f)
+        {
+          c=devdat[adr];
+          break;
+        }
+        outPos++;
+      case 9:
+        c='!';
+        break;
+      default:
+        c='?';
+        break;
+    }
+  
+  
+    outPos++;
+    return c | MUDEM_DATA;
+  }
+  else
+    return 0;
 }
 
 
-void main_Ctrl1(uint8_t b)
+void main_Recv(uint16_t w)
 {
-      CircularBufWrite(uart0_out,'C');
-      CircularBufWrite(uart0_out,b);
+  if ( w & MUDEM_DATA )
+  {
+    uint8_t c = w;
+    switch (recvPos)
+    {
+      case 0: //dst
+        if (c!=0x40)
+          recvPos=250;
+        break;
+      case 1://msglen
+        msgLen = c;
+        break;
+      case 2://src
+        srcAdr = c;
+        break;
+      case 3://dstport
+        if (c!=0x40)
+          recvPos=250;
+        break;
+      case 4://srcprt
+        srcPort = c;
+        break;
+      case 5://len1
+        if ((c&0x07)!=0x01)  //1 byte address
+          recvPos=250;
+        else
+          len1=c;  
+        break;
+      case 6://len2
+        if (c&0xee)  //1 byte get;1 byte set
+          recvPos=250;
+        else
+          len2=c;
+        break;
+      case 7://adr
+        adr=c&1;
+        break;
+      case 8://dat
+        if (len2&1)
+        { // setdat
+          devdat[adr]=c;
+          break;
+        }
+        recvPos++;
+      case 9:// chksum
+        break;
+                
+      default:
+        recvPos=250;  
+        break;
+    }
+    
+      CircularBufWrite(uart0_out,recvPos+'0');
       Uart0_StartTx();
+    
+    recvPos++;
+  }
+  else if (w & MUDEM_CTRL)
+  {
+    uint8_t c = w;
+    if (c==MUDEM_CTRL_START)
+    {
+      recvPos=0;
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+uint16_t dbg_Txd(void)
+{
+  return MUDEM_NODATA;
+}
+
+
+void dbg_Recv(uint16_t w)
+{
+
 }
 
 /*---------------------------------------------------------------------------*/

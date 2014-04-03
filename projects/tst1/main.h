@@ -6,8 +6,10 @@
 #include "stdint.h"
 #include "mudem.h"
 
-ByteReceived_t main_Recv1;
-ByteReceived_t main_Ctrl1;
+ByteReceived_t main_Recv;
+ByteTransmit_t main_Txd;
+ByteReceived_t dbg_Recv;
+ByteTransmit_t dbg_Txd;
 
 
 
