@@ -70,6 +70,24 @@ extern inline char CircularBufNotEmpty_INLINE(void * vp)
 
 
 
+char CircularBufNotFull(void * vp);
+
+extern inline char CircularBufNotFull_INLINE(void * vp)
+{
+  volatile CircularBufHdrType * p = (CircularBufHdrType *)vp;
+  uint8_t x = p->head+1;
+
+  if (x>=p->len)
+  {
+    x=sizeof(CircularBufHdrType);
+  }
+  
+  return ((p->head)-(p->tail));
+}
+
+
+
+
 /*
   Get oldest item from buffer:
     vp: pointer to buffer

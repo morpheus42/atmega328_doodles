@@ -25,6 +25,13 @@ char CircularBufNotEmpty(void * vp)
 }
 
 
+char CircularBufNotFull(void * vp)
+{
+  return CircularBufNotFull_INLINE(vp);
+}
+
+
+
 /*
   Add new item to buffer:
     vp: pointer to buffer
