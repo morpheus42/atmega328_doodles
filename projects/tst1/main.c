@@ -17,7 +17,18 @@ uint8_t uart0_out[M_CircularBufferCalcRequiredMemorySizeForBuffer(5)];
 
 
 
-
+void ConfigTimer1PWM(void)
+{
+  TCCR1A = 1<<COM1A1 | 1<<COM1B1;
+  TCCR1B = 1<<WGM13 | 1<<CS11;
+  
+  ICR1 = 20000;
+  OCR1A = 1500;
+  OCR1B = 1500;
+  
+  PORTB &= ~(1<<1 | 1<<2);
+  DDRB |= 1<<1 | 1<<2;
+}
 
 
 
@@ -126,6 +137,8 @@ int main(int argc, char * argv[])
   
   sei();
   
+  ConfigTimer1PWM();
+  
 #if 0
   DIDR0=0x01; //Disable digital input buffers of ADC analog input pins.
   DIDR1=0x03; //Disable digital input buffers of ACOMP analog input pins.
@@ -140,7 +153,7 @@ int main(int argc, char * argv[])
   
   count1 = 0;
 
-#if 1
+#if 0
   CircularBufWrite(uart0_out,'2');
   CircularBufWrite(uart0_out,'3');
   CircularBufWrite(uart0_out,'4');
@@ -219,7 +232,15 @@ int main(int argc, char * argv[])
 
 
 
-static uint8_t devdat[2];
+static uint8_t devdat[4];
+
+void UpdateTimer1PWM(void)
+{
+  OCR1A = devdat[0]*10;
+  OCR1B = devdat[1]*10;
+}
+
+
 
 
 static uint8_t recvPos=0;
@@ -327,12 +348,13 @@ void main_Recv(uint16_t w)
           len2=c;
         break;
       case 7://adr
-        adr=c&1;
+        adr=c&3;
         break;
       case 8://dat
         if (len2&1)
         { // setdat
           devdat[adr]=c;
+          UpdateTimer1PWM();
           break;
         }
         recvPos++;
@@ -351,7 +373,9 @@ void main_Recv(uint16_t w)
   }
   else if (w & MUDEM_CTRL)
   {
-    uint8_t c = w;
+    uint8_t c = ((uint8_t)w)&0x1F;
+      CircularBufWrite(uart0_out,c|0x20);
+      Uart0_StartTx();
     if (c==MUDEM_CTRL_START)
     {
       recvPos=0;
