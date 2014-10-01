@@ -114,7 +114,7 @@ extern inline uint8_t CircularBufRead_INLINE(void * vp)
     p->tail=x;
     return dat;
   }
-  return '?';
+  return 0;
 }
 
 
