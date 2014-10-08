@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <ctype.h>
-
+#include <termios.h>
 #include <poll.h>     
 
 
@@ -98,6 +98,24 @@ static void * run(void *arg)
   int res=0;
   int len;
   char buf[10];
+  
+  struct termios term, term_orig;
+
+  if (!(tcgetattr(0, &term_orig)))
+  {
+    term = term_orig;
+
+    term.c_lflag &= ~ICANON;
+    //term.c_lflag |= ECHO;
+    term.c_cc[VMIN] = 0;
+    term.c_cc[VTIME] = 0;
+
+    if (tcsetattr(0, TCSANOW, &term))
+    {
+      printf("tcsetattr failed.\n");
+    }
+  }
+  
   
   while (1)
   {  
