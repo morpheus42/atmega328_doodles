@@ -11,12 +11,12 @@
 #define SB(p) (1<<p)
 
 
-extern inline void Uart0_SetBaudrate(uint32_t baud)
+__attribute__ ((always_inline)) extern inline void Uart0_SetBaudrate(uint32_t baud)
 {
   
 }
 
-extern inline void Uart0_SetFormat(uint8_t bpc, uint8_t parity, uint8_t stopbits)
+__attribute__ ((always_inline)) extern inline void Uart0_SetFormat(uint8_t bpc, uint8_t parity, uint8_t stopbits)
 {
   
 }

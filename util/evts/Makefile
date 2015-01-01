@@ -9,6 +9,9 @@ SOURCEPATH+=$(MYDIR)
 MODULES+=$(MYDIR)/Makefile
 
 
+include $(DEVROOT)/util/cb/Makefile
+
+
 ifndef INCLUDED
 # Included make!
 

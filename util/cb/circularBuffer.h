@@ -36,7 +36,7 @@ void CircularBufInit(void * vp, unsigned char len);
 */
 uint8_t CircularBufWrite(void * vp, unsigned char v);
 
-extern inline uint8_t CircularBufWrite_INLINE(void * vp, unsigned char v)
+__attribute__ ((always_inline)) extern inline uint8_t CircularBufWrite_INLINE(void * vp, unsigned char v)
 {
   CircularBufHdrType * p = (CircularBufHdrType *)vp;
   uint8_t x=p->head;
@@ -61,7 +61,7 @@ extern inline uint8_t CircularBufWrite_INLINE(void * vp, unsigned char v)
 char CircularBufNotEmpty(void * vp);
 
 
-extern inline char CircularBufNotEmpty_INLINE(void * vp)
+__attribute__ ((always_inline)) extern inline char CircularBufNotEmpty_INLINE(void * vp)
 {
   volatile CircularBufHdrType * p = (CircularBufHdrType *)vp;
 
@@ -72,7 +72,7 @@ extern inline char CircularBufNotEmpty_INLINE(void * vp)
 
 char CircularBufNotFull(void * vp);
 
-extern inline char CircularBufNotFull_INLINE(void * vp)
+__attribute__ ((always_inline)) extern inline char CircularBufNotFull_INLINE(void * vp)
 {
   volatile CircularBufHdrType * p = (CircularBufHdrType *)vp;
   uint8_t x = p->head+1;
@@ -97,7 +97,7 @@ extern inline char CircularBufNotFull_INLINE(void * vp)
 
 uint8_t CircularBufRead(void * vp);
 
-extern inline uint8_t CircularBufRead_INLINE(void * vp)
+__attribute__ ((always_inline)) extern inline uint8_t CircularBufRead_INLINE(void * vp)
 {
   CircularBufHdrType * p = (CircularBufHdrType *)vp;
 

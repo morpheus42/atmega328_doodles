@@ -14,7 +14,7 @@
 #define SB(p) (1<<p)
 
 
-extern inline void Uart0_SetBaudrate(uint32_t baud)
+__attribute__ ((always_inline)) extern inline void Uart0_SetBaudrate(uint32_t baud) 
 {
   UBRR0 = ( (F_CPU/8) / baud)-1;
 }

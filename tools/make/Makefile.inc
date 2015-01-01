@@ -72,7 +72,7 @@ $(BUILDROOT)/$(PROJECT).elf: $(BOBJS)
 
 
 all:$(PROJECTTARGETS)
-	@echo $<  ====> $@
+	@echo "$@: $^"
 	@echo Modules: $(MODULES)
 	@echo SourceFiles: $(SOURCEFILES)
 	@echo IncPath: $(INCLUDEPATH)
