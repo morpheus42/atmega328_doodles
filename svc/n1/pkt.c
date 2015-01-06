@@ -84,6 +84,8 @@ static void cbtx(struct pkt_xferadm_t * _adm)
       postevt(EVTOFS_PKT+1);
 #endif      
     }
+    // Indicate that on return, no new packet for transmit has been set.
+    // This will later have to be done by SetTxBuffer()
     adm->xfer.buf=0;
   }
 
@@ -322,7 +324,10 @@ void pktout( void )
     adm->xfer.buf = ((char *)pkta)+offsetof(pkthdr_t,l2);
     adm->xfer.len = pkta->len;
     
-    ifstable[bus].ifs->SetTransmitBuf(adm);
+    if (ifstable[bus].ifs->SetTransmitBuf(adm)<0)
+    {
+      printf("TxBusy(%d).\n",bus); 
+    }
   }
   else
     printf("Nonextout?.\n");

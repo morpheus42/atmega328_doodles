@@ -138,64 +138,73 @@ static void txchar(void)
 {
   uint8_t newstate=txstate;
   
-  while (txlen)
+  if (txbuf)
   {
-    uint8_t c=*txbuf;
-           
-    if ((newstate & STATE_GOTADR)==0)
+    while (txlen)
     {
-      if ((newstate & STATE_INFRAME)==0)
+      uint8_t c=*txbuf;
+             
+      if ((newstate & STATE_GOTADR)==0)
       {
-        c=CHARCODE_FRAME;
-        newstate=STATE_INFRAME;
+        if ((newstate & STATE_INFRAME)==0)
+        {
+          c=CHARCODE_FRAME;
+          newstate=STATE_INFRAME;
+        }
+        else if ((newstate & STATE_GOTLEN)==0)
+        {
+          c=txlen;
+          newstate|=STATE_GOTLEN;
+        }
+        else if ((newstate & STATE_GOTADR)==0)
+        {
+          if (c==0xff)
+            c=myaddr;
+          newstate|=STATE_GOTADR;
+        }
       }
-      else if ((newstate & STATE_GOTLEN)==0)
+
+
+      if (newstate & STATE_GOTLEN)
       {
-        c=txlen;
-        newstate|=STATE_GOTLEN;
+        if ((c==CHARCODE_FRAME)||(c==CHARCODE_ESC)||(c==CHARCODE_NOTNULL))
+        {
+          if (newstate & STATE_INESC)
+            c ^= CHARCODE_ESCAPED;
+          else
+            c = CHARCODE_ESC;  
+          newstate ^= STATE_INESC;
+        }
       }
-      else if ((newstate & STATE_GOTADR)==0)
+      
+      
+      if (c==0)
+        c=CHARCODE_NOTNULL;
+      
+
+  //printf("<[%x,%x,%x].\n",c,*txbuf,txbuf);
+      if (!CircularBufWrite(uart0_out,c))
       {
-        if (c==0xff)
-          c=myaddr;
-        newstate|=STATE_GOTADR;
+        break;
       }
-    }
 
-
-    if (newstate & STATE_GOTLEN)
-    {
-      if ((c==CHARCODE_FRAME)||(c==CHARCODE_ESC)||(c==CHARCODE_NOTNULL))
+      if ((newstate & (STATE_GOTADR|STATE_INESC))==STATE_GOTADR)
       {
-        if (newstate & STATE_INESC)
-          c ^= CHARCODE_ESCAPED;
-        else
-          c = CHARCODE_ESC;  
-        newstate ^= STATE_INESC;
+        txbuf++;
+        txlen--;
+        if (!txlen)
+        {
+          txadm->cb(txadm);
+          txbuf = txadm->buf;
+          txlen = txadm->len;
+          break;
+        }
       }
-    }
-    
-    
-    if (c==0)
-      c=CHARCODE_NOTNULL;
-    
 
-//printf("<[%x,%x,%x].\n",c,*txbuf,txbuf);
-    if (!CircularBufWrite(uart0_out,c))
-    {
-      break;
+      txstate=newstate;
     }
-
-    if ((newstate & (STATE_GOTADR|STATE_INESC))==STATE_GOTADR)
-    {
-      txbuf++;
-      txlen--;
-    }
-
-    txstate=newstate;
+    Uart0_StartTx();
   }
-  Uart0_StartTx();
-  
   
 }
 
@@ -214,7 +223,7 @@ int8_t serpkt_SetReceiveBuf(pkt_xferadm_t * adm)
 pkt_SetTransmitBuf_ft serpkt_SetTransmitBuf;
 int8_t serpkt_SetTransmitBuf(pkt_xferadm_t * adm)
 {
-  if (txadm)
+  if (txbuf)
     return -1;
   txadm = adm;
   txbuf = adm->buf;

@@ -153,7 +153,10 @@ pq_pktid_t pq_Get( pq_id_t h )
 void pq_Put( pq_id_t h, pq_pktid_t bufid )
 {
   pq_FifoIn(h, bufid);
-  postevt(pq_adm[h].evt);
+  if (pq_adm[h].evt)
+  {
+    postevt(pq_adm[h].evt);
+  }
 }
 
 // get pkt ofs

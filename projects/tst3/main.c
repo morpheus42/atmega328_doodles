@@ -40,7 +40,9 @@ static void evt1(void)
 }
 
 
-int main(int argc, char * argv[])
+void main(void) __attribute__((noreturn)) ;
+
+void main(void)
 {
   uint8_t cnt0=0;
   sck_id_t fh0;
@@ -88,7 +90,6 @@ int main(int argc, char * argv[])
       }
     }
   }
-  return 0;
 }
 
 

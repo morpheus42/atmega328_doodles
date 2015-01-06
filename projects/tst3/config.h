@@ -24,7 +24,7 @@ extern uint8_t uart0_in[];
 #define postevt evts_post
 
 
-#define EVTS_QSIZE  10
+#define EVTS_QSIZE  16
 #define EVTS_EVTSHIFT 3
 #define EVTS_ADD (1<<EVTS_EVTSHIFT)
 
