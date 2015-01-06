@@ -1,46 +1,26 @@
+
+
+#include "config.h"
 #include "stddef.h"
 #include "board.h"
-#include "uart.h"
-#include "circularBuffer.h"
-//#include "mudem.h"
-//#include "main.h"
-//#include "ltenum.h"
+//#include "circularBuffer.h"
 #include "evts.h"
+#include "sleep.h"
+#include "pkt.h"
+#include "sck.h"
+#include "pq.h"
 
 
-uint8_t Q_evt[M_CircularBufferCalcRequiredMemorySizeForBuffer(10)];
-
-
-uint8_t uart0_in[M_CircularBufferCalcRequiredMemorySizeForBuffer(5)];
-uint8_t uart0_out[M_CircularBufferCalcRequiredMemorySizeForBuffer(5)];
+static void evt1(void);
 
 
 
-static void echo(void)
+
+const evtsfun_t * main_evts[] =
 {
-  while (CircularBufNotEmpty(uart0_in))
-  {
-    uint8_t c=CircularBufRead(uart0_in);
-    
-    c ^= 0x20;
-    
-    CircularBufWrite(uart0_out,c);
-    Uart0_StartTx();
-  }
-
-  CircularBufWrite(Q_evt,1);
-}
-
-
-
-
-
-
-static const evtsfun_t * myevts[] =
-{
-  NULL,
-  echo,
-  NULL,
+  NULL, // always NULL
+  evt1, // evt 1
+  NULL, // evt 2
   NULL,
   NULL,
   NULL,
@@ -51,46 +31,60 @@ static const evtsfun_t * myevts[] =
 
 
 
+uint8_t bbb[10];
+
+
+static void evt1(void)
+{
+  printf("evt1.\n");
+}
 
 
 int main(int argc, char * argv[])
 {
+  uint8_t cnt0=0;
+  sck_id_t fh0;
 
+  evts_init();
+  pq_Init();
+  Pkt_Init();
+  sck_Init();
+    
+  postevt(EVTOFS_SERPKT);
+   
+  fh0 = sck_sck(1);
+  sck_bind(fh0,(uint8_t[2]){0,0});
+  sck_setRecvEvt(fh0, 2);
 
-  CircularBufInit(Q_evt,sizeof(Q_evt));
-  CircularBufInit(uart0_in,sizeof(uart0_in));
-  CircularBufInit(uart0_out,sizeof(uart0_out));
-
-  Uart0_Init();
-//  Uart0_SetBaudrate(115200);
-  Uart0_SetBaudrate(19200);
-  Uart0_SetFormat(8, 1, 2);
-
-  echo();
-  
   while (1)
   {
-    uint8_t evt;  // 0 is not valid evt. 0 _can_ mean empty buffer
-    while ((evt=CircularBufRead(Q_evt)))
+    uint8_t s[]={'[','@',']','!'};
+    uint8_t r[10];
+    char stat;
+   
+    evts_exec(1);
+
+    sleep_enable();
+    sleep_cpu();
+    sleep_disable();
+
+    postevt(EVTOFS_SERPKT);
+    postevt(EVTOFS_SERPKT+1);
+    
+    
+    stat = sck_ReadFrom(fh0, r, r+2, sizeof(r)-2); 
+    
+    if (stat>0)
     {
-      evtsfun_t ** EvtFunPtrTbl=0;
-      
-      switch (evt & 0xF8)
+      sck_SendTo(fh0, r, r+2, sizeof(r)-2);
+    }
+    else
+    {
+      stat = sck_SendTo(fh0, (uint8_t[2]){0x51,0x52}, s, sizeof(s));
+
+      if (stat>=0)
       {
-        case 0x00:
-          EvtFunPtrTbl = myevts;
-          break;
-      
-        case 0x10:
-          EvtFunPtrTbl = 0;
-          break;
-          
-      }
-      if (EvtFunPtrTbl)
-      {
-        evtsfun_t * FunPtr=EvtFunPtrTbl[evt&0xf];
-        if (FunPtr)
-          FunPtr();
+        s[1]++;
       }
     }
   }
