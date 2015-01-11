@@ -29,7 +29,8 @@ typedef struct pkthdr_l2_t
 }pkthdr_l2_t;
 
 
-#define PKT_ID_IS_VALID(id) (id!=-1)
+#define PKT_INVALID_ID (-1)
+#define PKT_ID_IS_VALID(id) (id!=PKT_INVALID_ID)
 
 
 extern const evtsfun_t * pkt_evts[PKT_EVT_NUM];
@@ -51,6 +52,7 @@ uint8_t * Pkt_Ptr(pq_pktid_t id);
 void pkt_DoQ(pq_pktid_t id, int8_t bus);//, uint8_t hwd);
 
 int8_t Pkt_SetLen(pq_pktid_t id, int8_t len);
+uint8_t Pkt_GetLen(pq_pktid_t id);
 
 #endif
 

@@ -41,7 +41,7 @@ typedef struct pkthdr_t
 
 typedef struct sck_adm_t
 {
-  pq_id_t       fid;      // inPqId
+  pq_id_t       qid;      // inPqId
   sck_adr_prt_t adrPrt;   // listening adr+port
 //  uint8_t       ofs;      //payload ofs
 } sck_adm_t;
@@ -72,7 +72,7 @@ void sck_Init(void)
   char i;
   for (i=0;i<SCK_ADM_NUM;i++)
   { // marking all adm as free
-    adm[i].fid=PQ_INVALID_PQ_ID;
+    adm[i].qid=PQ_INVALID_PQ_ID;
   }
   // create packetqueue with event
   rtQ=pq_new(EVTOFS_SCK);
@@ -88,12 +88,12 @@ sck_id_t sck_sck( uint8_t evt )
   
   while (i>0)
   {
-    if (!PQ_ID_IS_VALID(adm[i].fid))
+    if (!PQ_ID_IS_VALID(adm[i].qid))
     { // found empty adm
-      adm[i].fid=pq_new(0);
-      if (PQ_ID_IS_VALID(adm[i].fid))
+      adm[i].qid=pq_new(0);
+      if (PQ_ID_IS_VALID(adm[i].qid))
       {
-        pq_SetEvt(adm[i].fid,evt);
+        pq_SetEvt(adm[i].qid,evt);
         return i;
       }
     }
@@ -109,7 +109,7 @@ static uint8_t PrtIsFree( uint8_t prt)
   
   while (i>0)
   {
-    if (PQ_ID_IS_VALID(adm[i].fid))
+    if (PQ_ID_IS_VALID(adm[i].qid))
     { // found used adm
       if (adm[i].adrPrt.prt==prt)
       {
@@ -162,7 +162,7 @@ void sck_setRecvEvt(sck_id_t id, uint8_t evt)
 {
   if (SCK_ID_IS_VALID(id))
   {
-    pq_SetEvt(sck_id2adm(id)->fid,evt);
+    pq_SetEvt(sck_id2adm(id)->qid,evt);
   }
 }
 
@@ -171,7 +171,7 @@ uint8_t sck_getRecvEvt(sck_id_t id)
 {
   if (SCK_ID_IS_VALID(id))
   {
-    return pq_GetEvt(sck_id2adm(id)->fid);
+    return pq_GetEvt(sck_id2adm(id)->qid);
   }
   return -1;
 }
@@ -184,6 +184,7 @@ int8_t sck_SendTo(sck_id_t id, sck_adr_prt_t * adrPrt, uint8_t * data, uint8_t l
   if (SCK_ID_IS_VALID(id))
   {
     pq_pktid_t pid=Pkt_GetFree();
+printf("STF:%d.\n",pid);
     if (PKT_ID_IS_VALID(pid))
     {
       sck_adm_t * adm = sck_id2adm(id);
@@ -226,22 +227,25 @@ int8_t sck_ReadFrom(sck_id_t id, sck_adr_prt_t * adrPrt, uint8_t * data, uint8_t
     sck_adm_t * adm = sck_id2adm(id);
     pq_pktid_t pid;
     
-    pid = Pkt_Get(adm->fid);
-    
+    pid = Pkt_Get(adm->qid);
+
     if (PKT_ID_IS_VALID(pid))
     {
       pkthdr_t * pkta = Pkt_Ptr(pid);
-      
+      uint8_t len = Pkt_GetLen(pid)-sizeof(pkthdr_t);
+            
       if (adrPrt)
       {
         adrPrt->adr = pkta->l3.adrs;
         adrPrt->prt = pkta->l4.prts;
       }
-      //TODO: do memcpy
+
+      memcpy(data, ((uint8_t*)pkta)+sizeof(pkthdr_t), len);
+
       Pkt_Free(pid);
-    }    
-    
-    return 0;
+      return len;
+    }
+    return 0;    
   }
   return -1;
 }
@@ -266,16 +270,31 @@ static void newpkt(void)
   if (PQ_PKT_ID_IS_VALID(pid))
   {
     pkthdr_t * pkta = Pkt_Ptr(pid);
-//    printf(":(%x,%x,%x,%x){%s}.\n",pkta->l3.adrd,pkta->l3.adrs,pkta->l4.prtd,pkta->l4.prts,pkta);
+    printf(":(%x,%x,%x,%x){%s}.\n",pkta->l3.adrd,pkta->l3.adrs,pkta->l4.prtd,pkta->l4.prts,pkta);
   
     // TODO: 1) if me, then for local sockets, else:2
     // TODO: 2) if got route, then use that IF, else:3
     // TODO: 3) use default IF
     
-//    if (pkta->l3.adrd = 0x40)
-//    {
-//    }
-//    else
+    if (pkta->l3.adrd = myadr)
+    {
+      char i=SCK_ADM_NUM-1;
+      
+      while (i>=0)
+      { // search for matching sck
+        if (PQ_ID_IS_VALID(adm[i].qid)&&(pkta->l4.prtd == adm[i].adrPrt.prt))
+        {
+          pq_Put(adm[i].qid,pid);
+          break;
+        }
+        i--;
+      }
+      if (i<0)
+      { // no matching socket, free packet
+        Pkt_Free(pid);
+      }
+    }
+    else
     {
       int8_t ifidx = -1;//TODO: getIFbyDST(pkta->l3.adrd)
       

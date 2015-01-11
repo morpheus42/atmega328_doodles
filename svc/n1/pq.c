@@ -64,6 +64,7 @@ void pq_FifoIn(pq_id_t pqId, pq_pktid_t id)
 
 
 
+
 pq_pktid_t pq_FifoOut(pq_id_t pqId)
 {
   pq_pktid_t ret = PqIdToPq(pqId).b;
@@ -148,6 +149,14 @@ pq_pktid_t pq_Get( pq_id_t h )
 {
   return pq_FifoOut(h);
 }
+
+
+// peek packet/buf id from queue h
+pq_pktid_t pq_Peek( pq_id_t h )
+{
+  return PqIdToPq(h).b;
+}
+
 
 // put packet/buf id into queue h and send event
 void pq_Put( pq_id_t h, pq_pktid_t bufid )

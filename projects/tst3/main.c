@@ -45,6 +45,7 @@ void main(void) __attribute__((noreturn)) ;
 void main(void)
 {
   uint8_t cnt0=0;
+  uint8_t s[]={'[','@',']','!'};
   sck_id_t fh0;
 
   evts_init();
@@ -52,15 +53,14 @@ void main(void)
   Pkt_Init();
   sck_Init();
     
-  postevt(EVTOFS_SERPKT);
+//  postevt(EVTOFS_SERPKT);
    
   fh0 = sck_sck(1);
-  sck_bind(fh0,(uint8_t[2]){0,0});
-  sck_setRecvEvt(fh0, 2);
+  sck_bind(fh0,(uint8_t[2]){0,0x45});
+  sck_setRecvEvt(fh0, EVTOFS_MAIN+1);
 
   while (1)
   {
-    uint8_t s[]={'[','@',']','!'};
     uint8_t r[10];
     char stat;
    
@@ -70,19 +70,23 @@ void main(void)
     sleep_cpu();
     sleep_disable();
 
-    postevt(EVTOFS_SERPKT);
-    postevt(EVTOFS_SERPKT+1);
+//    postevt(EVTOFS_SERPKT);
+//    postevt(EVTOFS_SERPKT+1);
     
     
     stat = sck_ReadFrom(fh0, r, r+2, sizeof(r)-2); 
     
     if (stat>0)
     {
+      char tmp = r[0];
+      r[0]=r[1];
+      r[1]=tmp;
+      printf("[%s].\n",r);
       sck_SendTo(fh0, r, r+2, sizeof(r)-2);
     }
     else
     {
-      stat = sck_SendTo(fh0, (uint8_t[2]){0x51,0x52}, s, sizeof(s));
+      //stat = sck_SendTo(fh0, (uint8_t[2]){0x51,0x52}, s, sizeof(s));
 
       if (stat>=0)
       {

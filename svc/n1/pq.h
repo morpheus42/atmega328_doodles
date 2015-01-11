@@ -31,6 +31,7 @@ void pq_SetEvt( pq_id_t h, uint8_t recvEvt); // set evt
 uint8_t pq_GetEvt( pq_id_t h); // get installed evt
 
 pq_pktid_t pq_Get( pq_id_t h ); // get packet/buf id from queue h
+pq_pktid_t pq_Peek( pq_id_t h );
 
 void pq_Put( pq_id_t h, pq_pktid_t bufid ); // put packet/buf id into queue h and send event
 

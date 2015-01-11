@@ -33,6 +33,10 @@
 #define UART0_TXQNE() 1
 #endif
 
+#ifndef UART0_EOFTX()
+#define UART0_EOFTX() {}
+#endif
+
 
 
 
@@ -139,6 +143,7 @@ static void * run(void *arg)
       else
       {
         fds[1].events=0; // no more data to send, turn off data ready interrupt
+        UART0_EOFTX();
       }
     }
     
@@ -150,6 +155,7 @@ static void * run(void *arg)
 
 void Uart0_StartTx( void )
 {
+  printf("StartTx.\n");
   fds[1].events=POLLOUT;
 }
 

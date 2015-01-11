@@ -72,20 +72,22 @@ static void rxchar(void)
     }
     else
     {
-      if (rxstate & STATE_INESC) // previous char was escape?
-      {
-        rxstate ^= STATE_INESC;
-        c^=CHARCODE_ESCAPED;
-      }
-      else
-      {
         if (c==CHARCODE_ESC) // escape char !!
+        {
           rxstate |= STATE_INESC;
+        }
         else
-        { // unescaped data
+        {
+          if (rxstate & STATE_INESC) // previous char was escape?
+          {
+            rxstate ^= STATE_INESC;
+            c^=CHARCODE_ESCAPED;
+          }
+        
           if (c==CHARCODE_NOTNULL)
+          {
             c=0;
-          
+          }
           
           if (rxstate & STATE_GOTADR)
           {
@@ -126,7 +128,7 @@ static void rxchar(void)
             }
           }
         }          
-      }
+      
     }    
   }
 
@@ -228,7 +230,8 @@ int8_t serpkt_SetTransmitBuf(pkt_xferadm_t * adm)
   txadm = adm;
   txbuf = adm->buf;
   txlen = adm->len;
- 
+  Uart0_StartTx();
+  
   return 1;
 }
 

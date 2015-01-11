@@ -26,6 +26,9 @@
 #define UART0_TXQNE() 1
 #endif
 
+#ifndef UART0_EOFTX()
+#define UART0_EOFTX() {}
+#endif
 
 
 ISR(USART_RX_vect)
@@ -64,6 +67,7 @@ ISR(USART_UDRE_vect)
     else
     {
        UCSR0B &= ~SB(UDRIE0); // no more data to send, turn off data ready interrupt
+       UART0_EOFTX();
     }
 //  PORTB &= ~(1<<PB3);
 }

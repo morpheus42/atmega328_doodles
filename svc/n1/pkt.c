@@ -56,10 +56,10 @@ typedef struct pkt_subs_adm_t
   pq_id_t pqId;
 }pkt_subs_adm_t;
 
-
+// subscribtions:
 static pkt_subs_adm_t subsadm[PKT_SUBS_NUM];
 
-
+// ifs:
 static busadm_t busadm[NUM_IFS];
 
 
@@ -77,7 +77,7 @@ static void cbtx(struct pkt_xferadm_t * _adm)
   {
     id = adm->id;
     
-    if ( id >= 0)
+    if ( PKT_ID_IS_VALID(id))
     {
       pq_Put(PKT_FIFO_FREE,id);
 #ifndef TX_Q_PER_BUS      
@@ -87,6 +87,7 @@ static void cbtx(struct pkt_xferadm_t * _adm)
     // Indicate that on return, no new packet for transmit has been set.
     // This will later have to be done by SetTxBuffer()
     adm->xfer.buf=0;
+    adm->id = PKT_INVALID_ID;
   }
 
 #ifdef TX_Q_PER_BUS
@@ -132,6 +133,8 @@ static void cbrx(struct pkt_xferadm_t * _adm)
   {
     pkthdr_t * pkt = pq_Ptr(id);
 
+    pkt->bus = (((char*)adm-(char*)busadm))/sizeof(busadm_t);
+    
     adm->id = id;
     adm->xfer.buf = ((char *)pkt)+offsetof(pkthdr_t,l2);
     adm->xfer.len = pq_Size(id)-offsetof(pkthdr_t,l2);
@@ -170,7 +173,7 @@ void Pkt_Init(void)
     }
   }
   
-  // setup all receivers with receiver buffers
+  // setup all interfaces with receiver buffers
   for (i=0; i<(sizeof(ifstable)/sizeof(ifstable[0])); i++)
   {
     ifstable[i].ifs->Init();
@@ -179,6 +182,7 @@ void Pkt_Init(void)
     cbrx(&busadm[i].rx.xfer);
     ifstable[i].ifs->SetReceiveBuf(&busadm[i].rx.xfer);
     busadm[i].tx.xfer.cb = cbtx;
+    busadm[i].tx.id = PKT_INVALID_ID;
   }
   
 }
@@ -190,7 +194,7 @@ void Pkt_Subscribe(uint8_t code, pq_id_t pqId)
   while (i>0)
   {
     i--;
-    if (subsadm[i].pqId==-1)
+    if (!PQ_ID_IS_VALID(subsadm[i].pqId))
     {
       subsadm[i].typ=code;
       subsadm[i].pqId=pqId;
@@ -259,6 +263,12 @@ int8_t Pkt_SetLen(pq_pktid_t id, int8_t len)
   return buf_Size(id)-len;
 }
 
+uint8_t Pkt_GetLen(pq_pktid_t id)
+{
+  pkthdr_t * pkta = pq_Ptr(id);
+  return pkta->len-sizeof(pkthdr_l2_t);
+}
+
 
 
 //Handle new pkt in incomming queue/fifo
@@ -269,21 +279,26 @@ void newpkt( void )
   uint8_t bus = pkta->bus;
   uint8_t hwd = pkta->l2.hwd;
 
-  printf("In:%d:%s.\n",pkta->len,&pkta->l2);
+//  printf("In:%d.%d:(%d)%s.\n",bus,pkta->len,pkta->l2.typ,&pkta->l2);
 
+  if (pkta->len<4)
+  {
+    pq_Put(PKT_FIFO_FREE,id);
+    return;
+  }
 
-
-  if ((hwd == *(ifstable[bus].ifs->hwa))||(hwd == 0xff))
+  if ((hwd == *(ifstable[bus].ifs->hwa))|| (hwd==0) ||(hwd == 0xff))
   { // message was for this device
     uint8_t typ = pkta->l2.typ;
     uint8_t i=PKT_SUBS_NUM;
-    
+
     while (i>0)
     {
       i--;
+
       if (subsadm[i].typ == typ)
       {
-        pq_Put(subsadm[i].typ,id);
+        pq_Put(subsadm[i].pqId,id);
         break;
       }
     }
@@ -300,8 +315,6 @@ void newpkt( void )
 #endif    
   }
     
-  
-//  pq_Put(PKT_FIFO_FREE,id);
 }
 
 
@@ -309,24 +322,26 @@ void newpkt( void )
 
 void pktout( void )
 {
-  pq_pktid_t id =pq_Get(PKT_FIFO_TX);
-  
-  if (PQ_PKT_ID_IS_VALID(id))
+  pq_pktid_t pid =pq_Peek(PKT_FIFO_TX);
+printf("TXO:%d.\n",pid);  
+  if (PQ_PKT_ID_IS_VALID(pid))
   {
-    pkthdr_t * pkta = pq_Ptr(id);
+    pkthdr_t * pkta = pq_Ptr(pid);
     uint8_t bus = pkta->bus;
     busxadm_t * adm = &busadm[bus].tx.xfer;
     
-//    printf("PktOut(%d->%d):%d:%x.\n",id,bus,pkta->len,&pkta->l2.hwd);
+    printf("PktOut(%d->%d):%d:%x.\n",pid,bus,pkta->len,&pkta->l2.hwd);
 
-
-    adm->id = id;
-    adm->xfer.buf = ((char *)pkta)+offsetof(pkthdr_t,l2);
-    adm->xfer.len = pkta->len;
-    
-    if (ifstable[bus].ifs->SetTransmitBuf(adm)<0)
+    if (!PKT_ID_IS_VALID(adm->id))
     {
-      printf("TxBusy(%d).\n",bus); 
+      adm->id = pid;
+      adm->xfer.buf = ((char *)pkta)+offsetof(pkthdr_t,l2);
+      adm->xfer.len = pkta->len;
+      
+      if (ifstable[bus].ifs->SetTransmitBuf(adm)>=0)
+      {
+        pq_Get(PKT_FIFO_TX);
+      }
     }
   }
   else

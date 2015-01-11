@@ -13,8 +13,13 @@ extern "C" {
 
 typedef void evtsfun_t( void );
 
-
 typedef evtsfun_t * evtsfuntbl_t;
+
+
+
+extern evtsfuntbl_t * evts_tablelist[];
+extern uint8_t evts_irq[];
+
 
 void evts_init( void );
 
@@ -22,8 +27,10 @@ void evts_post(uint8_t evt);
 
 void evts_exec(uint8_t opt);
 
-extern evtsfuntbl_t * evts_tablelist[];
-
+__attribute__ ((always_inline)) extern inline void evts_irqevt(uint8_t idx, uint8_t evt)
+{
+    evts_irq[idx]=evt;
+}
 
 #ifdef __cplusplus
 } //extern C
