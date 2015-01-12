@@ -43,6 +43,8 @@ void Pkt_Subscribe(uint8_t code, pq_id_t pqId);
 
 pq_pktid_t Pkt_GetFree( void );
 
+pq_pktid_t Pkt_Dup(pq_pktid_t pid);
+
 void Pkt_Free( pq_pktid_t id );
 
 uint8_t * Pkt_Ptr(pq_pktid_t id);

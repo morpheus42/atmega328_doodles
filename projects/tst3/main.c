@@ -33,10 +33,25 @@ const evtsfun_t * main_evts[] =
 
 uint8_t bbb[10];
 
+static sck_id_t fh0;
+
 
 static void evt1(void)
 {
-  printf("evt1.\n");
+    char stat;
+    uint8_t r[10];
+    
+    printf("evt1.\n");
+    
+    stat = sck_ReadFrom(fh0, r, r+2, sizeof(r)-2); 
+    
+    if (stat>0)
+    {
+      printf("[%s].\n",r);
+      r[2]++;
+      r[3]--;
+      sck_SendTo(fh0, r, r+2, sizeof(r)-2);
+    }
 }
 
 
@@ -46,22 +61,18 @@ void main(void)
 {
   uint8_t cnt0=0;
   uint8_t s[]={'[','@',']','!'};
-  sck_id_t fh0;
 
   evts_init();
   pq_Init();
   Pkt_Init();
   sck_Init();
-    
-//  postevt(EVTOFS_SERPKT);
-   
+       
   fh0 = sck_sck(1);
   sck_bind(fh0,(uint8_t[2]){0,0x45});
   sck_setRecvEvt(fh0, EVTOFS_MAIN+1);
 
   while (1)
   {
-    uint8_t r[10];
     char stat;
    
     evts_exec(1);
@@ -69,29 +80,12 @@ void main(void)
     sleep_enable();
     sleep_cpu();
     sleep_disable();
+        
+    //stat = sck_SendTo(fh0, (uint8_t[2]){0x51,0x52}, s, sizeof(s));
 
-//    postevt(EVTOFS_SERPKT);
-//    postevt(EVTOFS_SERPKT+1);
-    
-    
-    stat = sck_ReadFrom(fh0, r, r+2, sizeof(r)-2); 
-    
-    if (stat>0)
+    if (stat>=0)
     {
-      char tmp = r[0];
-      r[0]=r[1];
-      r[1]=tmp;
-      printf("[%s].\n",r);
-      sck_SendTo(fh0, r, r+2, sizeof(r)-2);
-    }
-    else
-    {
-      //stat = sck_SendTo(fh0, (uint8_t[2]){0x51,0x52}, s, sizeof(s));
-
-      if (stat>=0)
-      {
-        s[1]++;
-      }
+      s[1]++;
     }
   }
 }

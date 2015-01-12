@@ -238,6 +238,20 @@ pq_pktid_t Pkt_GetFree( void )
   return pq_Get(PKT_FIFO_FREE);
 }
 
+pq_pktid_t Pkt_Dup(pq_pktid_t pid)
+{
+  pq_pktid_t dup = Pkt_GetFree();
+  
+  if (PQ_PKT_ID_IS_VALID(dup))
+  {
+    pkthdr_t * pkta = pq_Ptr(pid);
+    
+    memcpy(pq_Ptr(dup),pq_Ptr(pid),pkta->len);
+  }
+  return dup;
+}
+
+
 void Pkt_Free( pq_pktid_t pktid)
 {
   pq_Put(PKT_FIFO_FREE,pktid);
@@ -330,7 +344,7 @@ printf("TXO:%d.\n",pid);
     uint8_t bus = pkta->bus;
     busxadm_t * adm = &busadm[bus].tx.xfer;
     
-    printf("PktOut(%d->%d):%d:%x.\n",pid,bus,pkta->len,&pkta->l2.hwd);
+    printf("PktOut(%d->[%d]):%d:%s.\n",pid,bus,pkta->len,&pkta->l2.hwd);
 
     if (!PKT_ID_IS_VALID(adm->id))
     {
