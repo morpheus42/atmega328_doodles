@@ -41,8 +41,6 @@ static uint8_t txstate;
 static uint8_t myaddr='?';//'~';
 
 
-static uint8_t oc=1;
-
 static void rxchar(void)
 {
   uint8_t c;
@@ -51,9 +49,6 @@ static void rxchar(void)
   { // 0 not used in uartdata.
     // 0 happens to be also the queue empty value ;-)
 
-//printf("%x:%d.\n",c,rxlen);
-
-    
     if (c==CHARCODE_FRAME) // frame key
     {
       if (rxstate & STATE_INFRAME)
@@ -83,8 +78,7 @@ static void rxchar(void)
             rxstate ^= STATE_INESC;
             c^=CHARCODE_ESCAPED;
           }
-        
-          if (c==CHARCODE_NOTNULL)
+          else if (c==CHARCODE_NOTNULL)
           {
             c=0;
           }
@@ -184,7 +178,6 @@ static void txchar(void)
         c=CHARCODE_NOTNULL;
       
 
-  //printf("<[%x,%x,%x].\n",c,*txbuf,txbuf);
       if (!CircularBufWrite(uart0_out,c))
       {
         break;
@@ -197,6 +190,7 @@ static void txchar(void)
         if (!txlen)
         {
           txadm->cb(txadm);
+          txstate=0;
           txbuf = txadm->buf;
           txlen = txadm->len;
           break;
