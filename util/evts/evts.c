@@ -48,6 +48,17 @@ static uint8_t getEvt( void )
   return CircularBufRead(Q_evt);
 }
 
+void evts_callevt(uint8_t evt)
+{
+    evtsfun_t ** EvtFunPtrTbl = evts_tablelist[evt>>EVTS_EVTSHIFT];
+    
+    evtsfun_t * FunPtr = EvtFunPtrTbl[evt&(0xFF>>(8-EVTS_EVTSHIFT))];
+
+    if (FunPtr)
+      FunPtr();
+}
+
+
 
 void evts_exec(uint8_t opt)
 {
@@ -55,12 +66,7 @@ void evts_exec(uint8_t opt)
 
   while ((evt=getEvt()))
   {
-    evtsfun_t ** EvtFunPtrTbl = evts_tablelist[evt>>EVTS_EVTSHIFT];
-    
-    evtsfun_t * FunPtr = EvtFunPtrTbl[evt&(0xFF>>(8-EVTS_EVTSHIFT))];
-
-    if (FunPtr)
-      FunPtr();
+    evts_callevt(evt);
 
     if ((opt&1)==0)
       break;

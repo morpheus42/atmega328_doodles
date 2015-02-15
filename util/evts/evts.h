@@ -27,6 +27,8 @@ void evts_post(uint8_t evt);
 
 void evts_exec(uint8_t opt);
 
+void evts_callevt(uint8_t evt);
+
 __attribute__ ((always_inline)) extern inline void evts_irqevt(uint8_t idx, uint8_t evt)
 {
     evts_irq[idx]=evt;

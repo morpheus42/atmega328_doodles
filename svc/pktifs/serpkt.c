@@ -38,7 +38,7 @@ static uint8_t rxstate;
 static uint8_t * txbuf;
 static uint8_t txlen;
 static uint8_t txstate;
-static uint8_t myaddr='?';//'~';
+static uint8_t myaddr=0;
 
 
 static void rxchar(void)

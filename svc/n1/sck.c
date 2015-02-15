@@ -106,8 +106,8 @@ sck_id_t sck_sck( uint8_t evt )
 static uint8_t PrtIsFree( uint8_t prt)
 {
   char i=SCK_ADM_NUM-1;
-  
-  while (i>0)
+
+  while (i>=0)
   {
     if (PQ_ID_IS_VALID(adm[i].qid))
     { // found used adm
@@ -118,12 +118,14 @@ static uint8_t PrtIsFree( uint8_t prt)
     }
     i--;
   }
+  
   return prt;
 }
 
 static uint8_t FindFreePrt( uint8_t hint )
 {
   uint8_t prt=0x20;
+
   if ((hint) && (PrtIsFree(hint)))
   {
     return hint;
@@ -144,11 +146,14 @@ static uint8_t FindFreePrt( uint8_t hint )
 int8_t sck_bind(sck_id_t id, sck_adr_prt_t * adrPrt)
 {
   sck_adm_t * adm;
+  uint8_t prt=adrPrt->prt;
+  
   if (SCK_ID_IS_VALID(id))
   {
     adm = sck_id2adm(id);
-    adm->adrPrt = *adrPrt;
-    adm->adrPrt.prt = FindFreePrt(adm->adrPrt.prt);
+    prt = FindFreePrt(prt);
+    adm->adrPrt.adr = adrPrt->adr;
+    adm->adrPrt.prt = prt;
     return 0;
   }
   else
@@ -261,7 +266,6 @@ static uint8_t myadr='!'; //TODO: aquire through adr req
 
 
 
-
 static void newpkt(void)
 {
   // get pkt id from routing Q
@@ -270,18 +274,18 @@ static void newpkt(void)
   if (PQ_PKT_ID_IS_VALID(pid))
   {
     pkthdr_t * pkta = Pkt_Ptr(pid);
-    printf(":(%x,%x,%x,%x){%s}.\n",pkta->l3.adrd,pkta->l3.adrs,pkta->l4.prtd,pkta->l4.prts,pkta);
+    printf(":(%x.%x->%x.%x){%s}.\n",pkta->l3.adrs,pkta->l4.prts,pkta->l3.adrd,pkta->l4.prtd,pkta);
   
     // TODO: 1) if me, then for local sockets, else:2
     // TODO: 2) if got route, then use that IF, else:3
     // TODO: 3) use default IF
     
-    if (pkta->l3.adrd = myadr)
+    if ((pkta->l3.adrd == myadr)||(pkta->l3.adrd==0)||(pkta->l3.adrd==0xff))
     {
       char i=SCK_ADM_NUM-1;
       
       while (i>=0)
-      { // search for matching sck
+      { // search for matching sck (no need to check adr because we currently have only one per system)
         if (PQ_ID_IS_VALID(adm[i].qid)&&(pkta->l4.prtd == adm[i].adrPrt.prt))
         {
           pq_Put(adm[i].qid,pid);
@@ -289,29 +293,44 @@ static void newpkt(void)
         }
         i--;
       }
-      if (i<0)
+      if ((i<0)&&(pkta->l3.adrd == myadr))
       { // no matching socket, free packet
         Pkt_Free(pid);
       }
     }
-    else
+    
+    if (pkta->l3.adrd != myadr)
     {
       int8_t ifidx = -1;//TODO: getIFbyDST(pkta->l3.adrd)
+      int8_t ifcnt = 1;
+      //NUM_IFS
       
       if (ifidx<0)
       {
-        ifidx=1;
+        ifidx=1; //TODO: select default IF
       }
       
+      while (ifcnt>0)
       {
-        pkthdr_l2_t * pkt2 = (pkthdr_l2_t *)(((uint8_t*)pkta)-sizeof(pkthdr_l2_t));
-        pkt2->hwd = 'D'; // TODO: get from found IF[ifidx]
-        pkt2->hws = 0; // let lower layer fill in the source hw
-        pkt2->typ = N1_DATAGRAM;
+        pq_pktid_t pidt=pid;
+        ifcnt--;
+        if (ifcnt)
+        {
+          pidt=Pkt_Dup(pid);
+        }
         
-      }        
+        if (PQ_PKT_ID_IS_VALID(pidt))
+        {
+          pkthdr_l2_t * pkt2 = (pkthdr_l2_t *)(((uint8_t*)Pkt_Ptr(pidt))-sizeof(pkthdr_l2_t));
+          pkt2->hwd = 0; // TODO: get from found IF[ifidx]
+          pkt2->hws = 0; // let lower layer fill in the source hw
+          pkt2->typ = N1_DATAGRAM;
+          pkt_DoQ(pidt, ifidx|0x40);
+        }
+        ifidx++;
+        
+      }
       
-      pkt_DoQ(pid, ifidx|0x40);
     }
   
   }
@@ -321,7 +340,32 @@ static void newpkt(void)
 
 
 
+/*
 
+hw adr resolution
+
+  |dst=00|src|typ=00|cmd|XXX
+  
+    cmd='Q': Who has adr?
+      XXX:|adr|uidlen|uidtype|uid|
+    cmd='N': I got (response to 41)
+      XXX:|adr|uidlen|uidtype|uid|
+    cmd='U': I take
+      XXX:|adr|uidlen|uidtype|uid|
+    cmd='M': Move to
+      XXX:|adr|to|
+
+States:
+    
+   OnMsg:
+   'Q': If me==adr: Reply with 'N'
+   'U': If me==src: me=00,NextAdr,UseAdr,SendQ
+   'N': If me==src, then me=00,NextAdr,UseAdr,SendQ
+   'M': If me==To, 
+
+
+
+*/
 
 
 /**************************************************/

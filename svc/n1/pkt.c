@@ -285,6 +285,7 @@ uint8_t Pkt_GetLen(pq_pktid_t id)
 
 
 
+
 //Handle new pkt in incomming queue/fifo
 void newpkt( void )
 {
@@ -292,6 +293,7 @@ void newpkt( void )
   pkthdr_t * pkta = pq_Ptr(id);
   uint8_t bus = pkta->bus;
   uint8_t hwd = pkta->l2.hwd;
+  uint8_t bushwd = *(ifstable[bus].ifs->hwa);
 
 //  printf("In:%d.%d:(%d)%s.\n",bus,pkta->len,pkta->l2.typ,&pkta->l2);
 
@@ -301,10 +303,11 @@ void newpkt( void )
     return;
   }
 
-  if ((hwd == *(ifstable[bus].ifs->hwa))|| (hwd==0) ||(hwd == 0xff))
+  if ((hwd == bushwd)|| (hwd==0) ||(hwd == 0xff)||(bushwd==0))
   { // message was for this device
     uint8_t typ = pkta->l2.typ;
     uint8_t i=PKT_SUBS_NUM;
+    typ=1;
 
     while (i>0)
     {
