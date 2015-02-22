@@ -1,141 +1,139 @@
-
+#include "stdint.h"
+#include "stddef.h"
 #include "avr/io.h"
 #include "dht11.h"
 #include "ticp.h"
 #include "circularBuffer.h"
 #include <avr/interrupt.h>
-
-#include "contiki.h"
-
-
-PROCESS(dht11collect_process, "dht11collect");
-AUTOSTART_PROCESSES(&dht11collect_process);
+#include "config.h"
 
 
+static void newdata(void);
+static void triggerend(void);
 
-//static char idx;
-static char sensor[5];
+static uint8_t temp,hum;
 
-static unsigned char buf[50];
+static uint8_t buf[8];
+static int8_t pos=0;
+static uint8_t half=0;
 
-void dht11_init(void)
+
+#define POS_FIRST_DELAY     0
+#define POS_5050_PULSE  (POS_FIRST_DELAY+1)
+#define POS_HUMH_BIT7   (POS_5050_PULSE+1)
+#define POS_HUMH_BIT0   (POS_HUMH_BIT7+7)
+#define POS_HUML_BIT7   (POS_HUMH_BIT0+1)
+#define POS_HUML_BIT0   (POS_HUML_BIT7+7)
+#define POS_TEMPH_BIT7  (POS_HUML_BIT0+1)
+#define POS_TEMPH_BIT0  (POS_TEMPH_BIT7+7)
+#define POS_TEMPL_BIT7  (POS_TEMPH_BIT0+1)
+#define POS_TEMPL_BIT0  (POS_TEMPL_BIT7+7)
+#define POS_CHK_BIT7    (POS_TEMPL_BIT0+1)
+#define POS_CHK_BIT0    (POS_CHK_BIT7+7)
+
+
+void dht11_Init(void)
 {
-  DDRB |= (1<<PB2);
   CircularBufInit(buf,sizeof(buf));
-  process_start(&dht11collect_process,NULL);
 }
 
-void dht11_start(void)
-{
-//  process_start(&dht11collect_process,NULL);
+static uint8_t evt;
+static char idx;
 
+void dht11_Start(uint8_t nEvt)
+{
   DDRB |= (1<<PB0);    // set PB0 to output  (high)
   PORTB &= ~(1<<PB0);  // set PB0 to low
 
-  process_post(&dht11collect_process, PROCESS_EVENT_INIT, NULL);
-  ticp_config(buf, TICP_CLK_DIV_64 | TICP_EDGE_FALL_START );//|TICP_EDGE_BOTH);
+  ticp_Config(buf, TICP_CLK_DIV_64 | TICP_EDGE_FALL_START,  EVTOFS_DHT11+1);//|TICP_EDGE_BOTH);
+  evt=nEvt;
 
-  {
-    long volatile i=0x8000;
-    while(i>0)
-      i--;
-  }
+  pos=POS_FIRST_DELAY;
 
+#if 1
+  evts_post(EVTOFS_DHT11);
+#else
+  triggerend();
+#endif
+}
+
+static void triggerend(void)
+{
   DDRB &= ~(1<<PB0);   // set PB0 to input
-  PORTB |= (1<<PB0);   // set PB0 to high
+//  PORTB |= (1<<PB0);   // set PB0 pullup enabled
+  PORTB &= ~(1<<PB0);  // set PB0 to low
 }
 
 
-PROCESS_THREAD(dht11collect_process, ev, data)
+static void newdata(void)
 {
-  PROCESS_BEGIN();
-  static char idx;
-  char * p;
   
-  idx=0;
-
-  while (idx<(sizeof(sensor)*8+1))
+  while (pos<=POS_CHK_BIT0)
   {
-    char x;
-    signed short v=CircularBufRead(buf);
-
-    if (v<0)
+    uint8_t v=CircularBufRead(buf);
+    uint8_t bit=0;
+    
+    if (v==0)
+      return;
+      
+    if (v>half)
+      bit=1;
+    
+    if (pos==POS_FIRST_DELAY)
     {
-      PROCESS_PAUSE();
-
-      if (idx==(sizeof(sensor)*8-1))
-        idx=(sizeof(sensor)*8+1);
+      //first delay
+    }
+    else if (pos==POS_5050_PULSE)
+    {
+      half=v/2;  //50-50 pulse
+    }
+    else if (pos<=POS_HUMH_BIT0)
+    {
+      hum=(hum<<1)+bit;
+    }
+    else if (pos<=POS_HUML_BIT0)
+    {
+      
+    }
+    else if (pos<=POS_TEMPH_BIT0)
+    {
+      temp=(temp<<1)+bit;
+    }
+    else if (pos<=POS_TEMPL_BIT0)
+    {
+      
+    }
+    else if (pos<POS_CHK_BIT0)
+    {
+      
     }
     else
     {
-      
-      PORTB |= (1<<PB2);
-
-      x=v;
-      
-      if (x<15)
-      {
-        x=0;
-      }
-      else if (x<25)
-      {
-        x=2;
-      }
-      else if (x<35)
-      {
-        x=3;
-      }
-      else if (x<50)
-      {
-        x=0;
-        idx=0;
-      }
-      else
-      {
-        x=0;
-      }
-      
-      if (x&2)
-      {
-        if (idx<(sizeof(sensor)*8))
-        {
-          unsigned char m;
-          p=&sensor[idx>>3];
-          
-          m = (0x80>>(idx&7));
-          if (x&1)
-            *p |= m;
-          else
-            *p &= ~m;
-          
-          idx++;
-        }
-        if (idx>=(sizeof(sensor)*8)-1)
-        {
-          ticp_config(NULL, TICP_CLK_NONE);
-        }
-        
-      }
-      PORTB &= ~(1<<PB2);
+      ticp_Config(NULL, TICP_CLK_NONE,0);
+      evts_post(evt);
     }
-    
-  }
-  
-  PROCESS_END();
+    pos++;
+
+  }  
 }
 
 
-signed char dht11_latest_temperature(void)
+signed char dht11_RecvTemperature(void)
 {
-  return sensor[2];
+  return temp;
 }
 
-signed char dht11_latest_humidity(void)
+signed char dht11_RecvHumidity(void)
 {
-  return sensor[0];
+  return hum;
 }
 
 
+const evtsfun_t * dht11_evts[] =
+{
+  triggerend,
+  newdata
+};
 
 
 

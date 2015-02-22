@@ -5,7 +5,7 @@
 #define __TICP_H__
 
 #include "circularBuffer.h"
-
+#include "stdint.h"
 
 #define TICP_EDGE_FALL_START 0x00
 #define TICP_EDGE_RISE_START 0x40
@@ -22,9 +22,9 @@
 #define TICP_CLK_T1_RISE  7
 
 
-#define ticp_init()
+#define ticp_Init()
 
-void ticp_config(void * buf, char cfg);
+void ticp_Config(void * buf, char cfg, uint8_t evt);
 
 
 

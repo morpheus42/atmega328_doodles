@@ -2,13 +2,17 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "config.h"
 #include "ticp.h"
+#include "stdint.h"
+#include "evts.h"
 
 
 static char bothEdges=0;
 static void * buf;
+static uint8_t evt;
 
-void ticp_config(void * nbuf, char cfg)
+void ticp_Config(void * nbuf, char cfg, uint8_t nEvt)
 {
   TCCR1B=0;
   TCCR1A=0;
@@ -29,6 +33,7 @@ void ticp_config(void * nbuf, char cfg)
   TCCR1B = (TCCR1B & 0xB8) | (cfg & ~TICP_EDGE_BOTH) | 0x80;
 
   buf=nbuf;
+  evt=nEvt;
 //  sei();
   DDRB |= (1<<PB1);
 }
@@ -65,6 +70,7 @@ ISR(TIMER1_CAPT_vect)
 
 
   CircularBufWrite_INLINE(buf,dat);  // Using inline because a call will push all registers on the stack when the compiler knows it is in interrupt.
+  evts_irqevt(EVTS_IRQ_TICP, evt);
 //  PORTB &= ~(1<<PB5);
 
 }
@@ -74,7 +80,7 @@ ISR(TIMER1_OVF_vect)
 {
 //  PORTB |= (1<<PB1);
   //increment overflow counter
-  //T1Ovs2++;
+  CircularBufWrite_INLINE(buf,255);  // Using inline because a call will push all registers on the stack
 //  PORTB &= ~(1<<PB1);
 }
 
