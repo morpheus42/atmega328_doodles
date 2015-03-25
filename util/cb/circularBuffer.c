@@ -1,4 +1,4 @@
-
+/* Code licensed under GPL3. See license.txt  */
 
 
 #include "circularBuffer.h"

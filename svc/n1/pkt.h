@@ -11,7 +11,6 @@
 #define PKT_ADR_BCAST_HOP_MASK  0x07
 #define PKT_ADR_BCAST_MASKV     0xFE
 
-#define PKT_EVT_NUM 2
 
 #define PKT_FIFO_MIN (3)
 // (2+NUM_IFS)
@@ -32,8 +31,6 @@ typedef struct pkthdr_l2_t
 #define PKT_INVALID_ID (-1)
 #define PKT_ID_IS_VALID(id) (id!=PKT_INVALID_ID)
 
-
-extern const evtsfun_t * pkt_evts[PKT_EVT_NUM];
 
 
 void Pkt_Init(void);

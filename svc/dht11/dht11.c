@@ -11,6 +11,10 @@
 static void newdata(void);
 static void triggerend(void);
 
+EVTS_DEF_FUNC(dht11_triggerend,triggerend);
+EVTS_DEF_FUNC(dht11_newdata,newdata);
+
+
 static uint8_t temp,hum;
 
 static uint8_t buf[8];
@@ -45,13 +49,13 @@ void dht11_Start(uint8_t nEvt)
   DDRB |= (1<<PB0);    // set PB0 to output  (high)
   PORTB &= ~(1<<PB0);  // set PB0 to low
 
-  ticp_Config(buf, TICP_CLK_DIV_64 | TICP_EDGE_FALL_START,  EVTOFS_DHT11+1);//|TICP_EDGE_BOTH);
+  ticp_Config(buf, TICP_CLK_DIV_64 | TICP_EDGE_FALL_START, evts_DefToNr(dht11_newdata));//|TICP_EDGE_BOTH);
   evt=nEvt;
 
   pos=POS_FIRST_DELAY;
 
 #if 1
-  evts_post(EVTOFS_DHT11);
+  evts_post(evts_DefToNr(dht11_triggerend));
 #else
   triggerend();
 #endif
@@ -127,15 +131,6 @@ signed char dht11_RecvHumidity(void)
 {
   return hum;
 }
-
-
-const evtsfun_t * dht11_evts[] =
-{
-  triggerend,
-  newdata
-};
-
-
 
 
 

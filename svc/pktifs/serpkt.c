@@ -41,6 +41,10 @@ static uint8_t txstate;
 static uint8_t myaddr=0;
 
 
+uint8_t serpkt_evt_rx=0;
+uint8_t serpkt_evt_eoftx=0;
+
+
 static void rxchar(void)
 {
   uint8_t c;
@@ -230,10 +234,19 @@ int8_t serpkt_SetTransmitBuf(pkt_xferadm_t * adm)
 }
 
 
+
+EVTS_DEF_FUNC(serpkt_rxchar,rxchar);
+EVTS_DEF_FUNC(serpkt_txchar,txchar);
+
+
 void serpkt_Init(void)
 {
   CircularBufInit(uart0_in,sizeof(uart0_in));
   CircularBufInit(uart0_out,sizeof(uart0_out));
+  
+  serpkt_evt_rx = evts_DefToNr(serpkt_rxchar);
+  serpkt_evt_eoftx = evts_DefToNr(serpkt_txchar);
+  
     
   Uart0_Init();
 //  Uart0_SetBaudrate(115200);
@@ -244,16 +257,9 @@ void serpkt_Init(void)
 
 
 
-const evtsfun_t * serpkt_evts[SERPKT_EVT_NUM] =
-{
-  rxchar,
-  txchar,
-};
-
-
 const pkt_if_t serpkt_if=
 {
-  serpkt_evts,
+//  serpkt_evts,
   serpkt_Init,
   serpkt_SetReceiveBuf,
   serpkt_SetTransmitBuf,

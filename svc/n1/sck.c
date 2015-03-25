@@ -49,6 +49,9 @@ typedef struct sck_adm_t
 
 #define SCK_ID_IS_VALID(id) (id<SCK_ADM_NUM)
 
+static void newpkt( void );
+EVTS_DEF_FUNC(sck_newpkt, newpkt);
+
 
 //routing queue
 static uint8_t rtQ;
@@ -75,7 +78,7 @@ void sck_Init(void)
     adm[i].qid=PQ_INVALID_PQ_ID;
   }
   // create packetqueue with event
-  rtQ=pq_new(EVTOFS_SCK);
+  rtQ=pq_new(evts_DefToNr(sck_newpkt));
 
   // get all DG packets in rtQ
   Pkt_Subscribe(N1_DATAGRAM,rtQ);
@@ -370,11 +373,6 @@ States:
 
 /**************************************************/
 
-const evtsfun_t * sck_evts[SCK_EVT_NUM] =
-{
-  newpkt,
-  NULL,
-};
 
 
 

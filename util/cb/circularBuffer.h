@@ -1,4 +1,4 @@
-
+/* Code licensed under GPL3. See license.txt  */
 
 #ifndef _CIRCULARBUFFER_H_
 #define _CIRCULARBUFFER_H_

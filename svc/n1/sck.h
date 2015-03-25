@@ -7,11 +7,6 @@
 #include "evts.h"
 
 
-
-#define SCK_EVT_NUM 2
-
-
-
 typedef uint8_t sck_id_t;
 
 
@@ -21,9 +16,6 @@ typedef struct sck_adr_prt_t
   uint8_t prt;  
 }sck_adr_prt_t;
 
-
-
-extern const evtsfun_t * sck_evts[SCK_EVT_NUM];
 
 
 

@@ -3,7 +3,7 @@
 #include "config.h"
 #include "stddef.h"
 #include "board.h"
-//#include "circularBuffer.h"
+#include "compdefs.h"
 #include "evts.h"
 #include "sleep.h"
 #include "pkt.h"
@@ -26,20 +26,9 @@ static void tst3(void);
 
 
 
-
-const evtsfun_t * main_evts[] =
-{
-  NULL, // always NULL
-  evt1, // evt 1
-  evt2, // evt 2
-  tst3,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-};
-
+EVTS_DEF_FUNC(main_evt1,evt1);
+EVTS_DEF_FUNC(main_evt2,evt2);
+EVTS_DEF_FUNC(main_tst3,tst3);
 
 
  
@@ -150,13 +139,13 @@ static void evt2(void)
         case '?':
         case 'T':
         case 'H':
-          dht11_Start(EVTOFS_MAIN+3);
+          dht11_Start(evts_DefToNr(main_tst3));
           break;
                     
         default:
           dhtSckBuf[3]=dhtSckBuf[2];
           dhtSckBuf[4]=len;
-          dhtSckBuf[2]^=0x80;
+          dhtSckBuf[2]=255;
           len=3;
           sck_SendTo(fh2, dhtSckBuf, dhtSckBuf+2, len);
           break;
@@ -188,7 +177,7 @@ static void tst3(void)
       *((uint16_t*)&dhtSckBuf[3])=dht11_RecvHumidity()*10;
       break;
   }   
-  dhtSckBuf[2]^=0x20;
+  dhtSckBuf[2]^=0x80;
   sck_SendTo(fh2, dhtSckBuf, dhtSckBuf+2, len+1);
 }
 
@@ -217,13 +206,13 @@ void main(void)
 
   fh0 = sck_sck(1);
   sck_bind(fh0,(uint8_t[2]){0,0x03});
-  sck_setRecvEvt(fh0, EVTOFS_MAIN+1);
+  sck_setRecvEvt(fh0, evts_DefToNr(main_evt1));//EVTOFS_MAIN+1);
 
 #if 1
 
   fh2 = sck_sck(1);
   sck_bind(fh2,(uint8_t[2]){0,0x20});
-  sck_setRecvEvt(fh2, EVTOFS_MAIN+2);
+  sck_setRecvEvt(fh2, evts_DefToNr(main_evt2));//EVTOFS_MAIN+2);
 #endif
 
 

@@ -30,9 +30,6 @@ const ifentry_const_t ifstable[NUM_IFS]=
 
 
 
-evtsfuntbl_t * evts_tablelist[]=EVTS_TABLELIST;
-
-
 
 
 

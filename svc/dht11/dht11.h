@@ -8,8 +8,6 @@ void dht11_Init(void);
 void dht11_Start(uint8_t evt);
 char dht11_tick(void);
 
-const evtsfun_t * dht11_evts[];
-
 signed char dht11_RecvTemperature(void);
 
 signed char dht11_RecvHumidity(void);

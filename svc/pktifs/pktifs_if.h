@@ -31,7 +31,7 @@ typedef evtsfun_t * evtsfun_fp_t;
 
 typedef struct pkt_if_t
 {
-  evtsfun_fp_t          * evts;
+//  evtsfun_fp_t          * evts;
   pkt_Init_ft           * Init;
   pkt_SetReceiveBuf_ft  * SetReceiveBuf;
   pkt_SetTransmitBuf_ft * SetTransmitBuf;

@@ -7,10 +7,7 @@
 #include "evts.h"
 #include "pktifs_if.h"
 
-#define LBDPKT_EVT_NUM  2
 
-
-extern const evtsfun_t * lbdpkt_evts[LBDPKT_EVT_NUM];
 extern const pkt_if_t lbdpkt_if;
 
 

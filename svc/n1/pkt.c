@@ -56,6 +56,16 @@ typedef struct pkt_subs_adm_t
   pq_id_t pqId;
 }pkt_subs_adm_t;
 
+
+
+static void newpkt( void );
+static void pktout( void );
+
+EVTS_DEF_FUNC(pkt_newpkt, newpkt);
+EVTS_DEF_FUNC(pkt_pktout, pktout);
+
+
+
 // subscribtions:
 static pkt_subs_adm_t subsadm[PKT_SUBS_NUM];
 
@@ -81,7 +91,7 @@ static void cbtx(struct pkt_xferadm_t * _adm)
     {
       pq_Put(PKT_FIFO_FREE,id);
 #ifndef TX_Q_PER_BUS      
-      postevt(EVTOFS_PKT+1);
+      evts_postByDef(pkt_pktout);
 #endif      
     }
     // Indicate that on return, no new packet for transmit has been set.
@@ -153,8 +163,8 @@ void Pkt_Init(void)
   uint8_t i;
 
   PKT_FIFO_FREE=pq_new(0);
-  PKT_FIFO_RX=pq_new(EVTOFS_PKT);
-  PKT_FIFO_TX=pq_new(EVTOFS_PKT+1);
+  PKT_FIFO_RX=pq_new(evts_DefToNr(pkt_newpkt));
+  PKT_FIFO_TX=pq_new(evts_DefToNr(pkt_pktout));
   
   //initialize protocol subscribe list
   for (i=0;i<PKT_SUBS_NUM;i++)
@@ -367,12 +377,6 @@ printf("TXO:%d.\n",pid);
 }
 
 
-
-const evtsfun_t * pkt_evts[PKT_EVT_NUM] =
-{
-  newpkt,
-  pktout,
-};
 
 
 

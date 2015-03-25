@@ -10,6 +10,7 @@ MODULES+=$(MYDIR)/Makefile
 
 
 include $(DEVROOT)/util/cb/Makefile
+include $(DEVROOT)/util/ltenum/Makefile
 
 
 ifndef INCLUDED

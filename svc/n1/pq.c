@@ -164,7 +164,7 @@ void pq_Put( pq_id_t h, pq_pktid_t bufid )
   pq_FifoIn(h, bufid);
   if (pq_adm[h].evt)
   {
-    postevt(pq_adm[h].evt);
+    evts_post(pq_adm[h].evt);
   }
 }
 
