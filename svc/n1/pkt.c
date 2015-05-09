@@ -15,14 +15,8 @@
 
 uint8_t PKT_FIFO_FREE;
 uint8_t PKT_FIFO_RX;
-uint8_t PKT_FIFO_TX;
+uint8_t busTxQ[NUM_IFS];
 
-
-
-//#define PKT_ILLEGAL_ID (-1)
-
-
-//#define TX_Q_PER_BUS
 
 
 
@@ -59,83 +53,17 @@ typedef struct pkt_subs_adm_t
 
 
 static void newpkt( void );
-static void pktout( void );
-
 EVTS_DEF_FUNC(pkt_newpkt, newpkt);
-EVTS_DEF_FUNC(pkt_pktout, pktout);
 
 
 
 // subscribtions:
 static pkt_subs_adm_t subsadm[PKT_SUBS_NUM];
 
-// ifs:
-static busadm_t busadm[NUM_IFS];
 
-
-
-
-// called by pkt transmitter when pkt has been transmitted
-static void cbtx(struct pkt_xferadm_t * _adm)
+void pktifs_GetRxPkt(uint8_t ifsId, pkt_xferadm_t * rxadm)
 {
-  busxadm_t * adm = (busxadm_t*)_adm;
   pktId_t id;
-
-  printf("txed.\n");
-  
-  if (adm->xfer.buf)
-  {
-    id = adm->id;
-    
-    if ( PKT_ID_IS_VALID(id))
-    {
-      pq_Put(PKT_FIFO_FREE,id);
-#ifndef TX_Q_PER_BUS      
-      evts_postByDef(pkt_pktout);
-#endif      
-    }
-    // Indicate that on return, no new packet for transmit has been set.
-    // This will later have to be done by SetTxBuffer()
-    adm->xfer.buf=0;
-    adm->id = PKT_INVALID_ID;
-  }
-
-#ifdef TX_Q_PER_BUS
-  id = Pkt_FifoOut(....);
-
-  if PKT_ID_IS_VALID(id)
-  {
-    pkthdr_t * pkt = pq_Ptr(id);
-
-    adm->id = id;
-    adm->xfer.buf = ((char *)pkt)+offsetof(pkthdr_t,hwd);
-    adm->xfer.len = buf_Size(id)-offsetof(pkthdr_t,hwd);
-  }
-#endif
-  
-}
-
-
-// called by pkt receiver when new pkt received
-static void cbrx(struct pkt_xferadm_t * _adm)
-{
-  busxadm_t * adm = (busxadm_t*)_adm;
-  pktId_t id;
-
-  
-  if (adm->xfer.buf)
-  {
-    pkthdr_t * pkt = (pkthdr_t *)(adm->xfer.buf - offsetof(pkthdr_t,l2));
-    id = adm->id;
-    
-    if ( id >= 0)
-    {
-      pkt->len = adm->xfer.len;
-      pq_Put(PKT_FIFO_RX,id);
-    }
-    adm->xfer.buf=0;
-  }
-
   
   id = pq_Get(PKT_FIFO_FREE);
 
@@ -143,16 +71,54 @@ static void cbrx(struct pkt_xferadm_t * _adm)
   {
     pkthdr_t * pkt = pq_Ptr(id);
 
-    pkt->bus = (((char*)adm-(char*)busadm))/sizeof(busadm_t);
+    pkt->bus = ifsId;
     
-    adm->id = id;
-    adm->xfer.buf = ((char *)pkt)+offsetof(pkthdr_t,l2);
-    adm->xfer.len = pq_Size(id)-offsetof(pkthdr_t,l2);
+    rxadm->pktId = id;
+    rxadm->buf = ((char *)pkt)+offsetof(pkthdr_t,l2);
+    rxadm->len = pq_Size(id)-offsetof(pkthdr_t,l2);
   }
+}
+
+void pktifs_PktReceived(pkt_xferadm_t * rxadm)
+{
+  pkthdr_t * pkt = pq_Ptr(rxadm->pktId);
+
+  pkt->len=rxadm->len;
+  rxadm->len=0;
   
+  pq_Put(PKT_FIFO_RX,rxadm->pktId);  
 }
 
 
+
+void pktifs_GetTxPkt(uint8_t ifsId, pkt_xferadm_t * txadm)
+{
+  pktId_t id;
+  
+  id = pq_Get(busTxQ[ifsId]);
+
+  if PQ_PKT_ID_IS_VALID(id)
+  {
+    pkthdr_t * pkt = pq_Ptr(id);
+    
+    txadm->pktId = id;
+    txadm->buf = ((char *)pkt)+offsetof(pkthdr_t,l2);
+    txadm->len = pq_Size(id)-offsetof(pkthdr_t,l2);
+  }
+  else
+  {
+    txadm->buf=0;
+  }
+}
+
+
+
+
+void pktifs_PktTransmitted(pkt_xferadm_t * txadm)
+{
+  pq_Put(PKT_FIFO_FREE,txadm->pktId);
+  txadm->buf = 0;
+}
 
 
 
@@ -164,7 +130,6 @@ void Pkt_Init(void)
 
   PKT_FIFO_FREE=pq_new(0);
   PKT_FIFO_RX=pq_new(evts_DefToNr(pkt_newpkt));
-  PKT_FIFO_TX=pq_new(evts_DefToNr(pkt_pktout));
   
   //initialize protocol subscribe list
   for (i=0;i<PKT_SUBS_NUM;i++)
@@ -177,7 +142,6 @@ void Pkt_Init(void)
   {
     buf_handle_t hb = buf_Get(12);
 //    printf("%x:%x.\n",hb,PktIdToPkt(hb));
-    if (PQ_PKT_ID_IS_VALID(hb))
     {
       pq_Put(PKT_FIFO_FREE,hb);
     }
@@ -186,13 +150,11 @@ void Pkt_Init(void)
   // setup all interfaces with receiver buffers
   for (i=0; i<(sizeof(ifstable)/sizeof(ifstable[0])); i++)
   {
-    ifstable[i].ifs->Init();
-    busadm[i].rx.xfer.cb = cbrx;
-    busadm[i].rx.xfer.buf=0;
-    cbrx(&busadm[i].rx.xfer);
-    ifstable[i].ifs->SetReceiveBuf(&busadm[i].rx.xfer);
-    busadm[i].tx.xfer.cb = cbtx;
-    busadm[i].tx.id = PKT_INVALID_ID;
+    if (ifstable[i].ifs)
+    {
+      ifstable[i].ifs->Init(i);
+    }
+    busTxQ[i]=pq_new(0);
   }
   
 }
@@ -234,7 +196,9 @@ void pkt_DoQ(pq_pktid_t id, int8_t bus)//, uint8_t hwd)
   
   if (bus & 0x40)
   {
-    pq_Put(PKT_FIFO_TX, id);
+    bus&=0x3f;
+    pq_Put(busTxQ[bus],id);
+    ifstable[bus].ifs->TxPktInQ();
   }
   else
   {
@@ -334,47 +298,14 @@ void newpkt( void )
   else
   {
     //forward
-#ifdef TX_Q_PER_BUS      
-    uint8_t bus = pkta->bus;
-    pq_Put(PKT_FIFO_TX+bus,id);
-#else    
-    pq_Put(PKT_FIFO_TX,id);
-#endif    
+    uint8_t bus = pkta->bus & 0x3f;
+    pq_Put(busTxQ[bus],id);
+    ifstable[bus].ifs->TxPktInQ();
   }
     
 }
 
 
-
-
-void pktout( void )
-{
-  pq_pktid_t pid =pq_Peek(PKT_FIFO_TX);
-printf("TXO:%d.\n",pid);  
-  if (PQ_PKT_ID_IS_VALID(pid))
-  {
-    pkthdr_t * pkta = pq_Ptr(pid);
-    uint8_t bus = pkta->bus;
-    busxadm_t * adm = &busadm[bus].tx.xfer;
-    
-    printf("PktOut(%d->[%d]):%d:%s.\n",pid,bus,pkta->len,&pkta->l2.hwd);
-
-    if (!PKT_ID_IS_VALID(adm->id))
-    {
-      adm->id = pid;
-      adm->xfer.buf = ((char *)pkta)+offsetof(pkthdr_t,l2);
-      adm->xfer.len = pkta->len;
-      
-      if (ifstable[bus].ifs->SetTransmitBuf(adm)>=0)
-      {
-        pq_Get(PKT_FIFO_TX);
-      }
-    }
-  }
-  else
-    printf("Nonextout?.\n");
-  
-}
 
 
 

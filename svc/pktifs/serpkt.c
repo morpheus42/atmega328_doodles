@@ -29,17 +29,18 @@ uint8_t uart0_in[M_CircularBufferCalcRequiredMemorySizeForBuffer(5)];
 uint8_t uart0_out[M_CircularBufferCalcRequiredMemorySizeForBuffer(5)];
 
 
-static pkt_xferadm_t * rxadm;
-static pkt_xferadm_t * txadm;
+static pkt_xferadm_t rxadm;
+static pkt_xferadm_t txadm;
 
+static uint8_t myIfId;
+
+//{
 static uint8_t * rxbuf;
 static uint8_t rxlen;
 static uint8_t rxstate;
-static uint8_t * txbuf;
-static uint8_t txlen;
 static uint8_t txstate;
 static uint8_t myaddr=0;
-
+//}
 
 uint8_t serpkt_evt_rx=0;
 uint8_t serpkt_evt_eoftx=0;
@@ -58,15 +59,17 @@ static void rxchar(void)
       if (rxstate & STATE_INFRAME)
       { // we were in a frame!
         rxstate=0;
-        rxadm->len=rxbuf-rxadm->buf;
-        rxadm->cb(rxadm);
+        rxadm.len=rxbuf-rxadm.buf;
+        pktifs_PktReceived(&rxadm);
+        
       }
       //start of frame
-      rxlen = rxadm->len;
+      pktifs_GetRxPkt(myIfId, &rxadm);
+      rxlen = rxadm.len;
       if (rxlen)
       {
         rxstate=STATE_INFRAME;
-        rxbuf = rxadm->buf;
+        rxbuf = rxadm.buf;
       }
     }
     else
@@ -97,8 +100,8 @@ static void rxchar(void)
               if (rxlen==0)
               {
                 rxstate=0;
-                rxadm->len=rxbuf-rxadm->buf;
-                rxadm->cb(rxadm);
+                rxadm.len=rxbuf-rxadm.buf;
+                pktifs_PktReceived(&rxadm);
               }
             }        
           }
@@ -137,12 +140,18 @@ static void rxchar(void)
 static void txchar(void)
 {
   uint8_t newstate=txstate;
-  
-  if (txbuf)
+    
+  if (!txadm.buf)
   {
-    while (txlen)
+    // get new from queue
+    pktifs_GetTxPkt(myIfId,&txadm);
+  }
+  
+  if (txadm.buf)
+  {
+    while (txadm.len)
     {
-      uint8_t c=*txbuf;
+      uint8_t c=*(txadm.buf);
              
       if ((newstate & STATE_GOTADR)==0)
       {
@@ -153,7 +162,7 @@ static void txchar(void)
         }
         else if ((newstate & STATE_GOTLEN)==0)
         {
-          c=txlen;
+          c=txadm.len;
           newstate|=STATE_GOTLEN;
         }
         else if ((newstate & STATE_GOTADR)==0)
@@ -189,14 +198,15 @@ static void txchar(void)
 
       if ((newstate & (STATE_GOTADR|STATE_INESC))==STATE_GOTADR)
       {
-        txbuf++;
-        txlen--;
-        if (!txlen)
+        txadm.buf++;
+        txadm.len--;        
+        if (!txadm.len)
         {
-          txadm->cb(txadm);
+//          txadm->cb(txadm);
           txstate=0;
-          txbuf = txadm->buf;
-          txlen = txadm->len;
+//          txbuf = txadm->buf;
+//          txlen = txadm->len;
+          pktifs_PktTransmitted(&txadm);
           break;
         }
       }
@@ -209,17 +219,15 @@ static void txchar(void)
 }
 
 
-pkt_SetReceiveBuf_ft serpkt_SetReceiveBuf;
-int8_t serpkt_SetReceiveBuf(pkt_xferadm_t * adm)
+
+
+static pkt_TxPktInQ_ft TxPktInQ;
+static void TxPktInQ(void)
 {
-  if (rxadm)
-    return -1;
-  rxadm = adm;
-  
-  return 1;
+  Uart0_StartTx();
 }
 
-
+#if 0
 pkt_SetTransmitBuf_ft serpkt_SetTransmitBuf;
 int8_t serpkt_SetTransmitBuf(pkt_xferadm_t * adm)
 {
@@ -232,15 +240,17 @@ int8_t serpkt_SetTransmitBuf(pkt_xferadm_t * adm)
   
   return 1;
 }
-
+#endif
 
 
 EVTS_DEF_FUNC(serpkt_rxchar,rxchar);
 EVTS_DEF_FUNC(serpkt_txchar,txchar);
 
 
-void serpkt_Init(void)
+void serpkt_Init(uint8_t id)
 {
+  myIfId = id;
+
   CircularBufInit(uart0_in,sizeof(uart0_in));
   CircularBufInit(uart0_out,sizeof(uart0_out));
   
@@ -255,14 +265,18 @@ void serpkt_Init(void)
 }
 
 
+static void SetAdr(uint8_t newAdr)
+{
+  myaddr = newAdr;
+}
+
 
 
 const pkt_if_t serpkt_if=
 {
-//  serpkt_evts,
   serpkt_Init,
-  serpkt_SetReceiveBuf,
-  serpkt_SetTransmitBuf,
+  TxPktInQ,
+  SetAdr,
   &myaddr
 };
 
