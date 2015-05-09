@@ -155,7 +155,7 @@ static void * run(void *arg)
 
 void Uart0_StartTx( void )
 {
-  printf("StartTx.\n");
+//  printf("StartTx.\n");
   fds[1].events=POLLOUT;
 }
 
