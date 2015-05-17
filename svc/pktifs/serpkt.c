@@ -227,20 +227,6 @@ static void TxPktInQ(void)
   Uart0_StartTx();
 }
 
-#if 0
-pkt_SetTransmitBuf_ft serpkt_SetTransmitBuf;
-int8_t serpkt_SetTransmitBuf(pkt_xferadm_t * adm)
-{
-  if (txbuf)
-    return -1;
-  txadm = adm;
-  txbuf = adm->buf;
-  txlen = adm->len;
-  Uart0_StartTx();
-  
-  return 1;
-}
-#endif
 
 
 EVTS_DEF_FUNC(serpkt_rxchar,rxchar);
