@@ -8,6 +8,9 @@ INCLUDEPATH+=$(MYDIR)
 #SOURCEPATH+=$(MYDIR)
 MODULES+=$(MYDIR)/Makefile
 
+ifneq (X$(AVRMCU),X)
+  LDSCRIPTS+=$(MYDIR)/ltenum.lds
+endif
 
 ifndef INCLUDED
 # Included make!

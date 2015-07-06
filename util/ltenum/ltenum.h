@@ -9,6 +9,8 @@ extern "C" {
 
 #include "stdint.h"
 #include "compdefs.h"
+#include "msections.h"
+
 
 #ifndef QUOTE
 #define QUOTE(n) #n
@@ -20,8 +22,14 @@ extern "C" {
 
 #define LTE_ADDENTRY(typ, group, name) typ __attribute((used,__section__(QUOTE(__lte_##group)))) __lte_##group##_##name
 
-#define LTE_ENTRYSET(group, name, val) __lte_##group##_##name = val
-#define LTE_ENTRYGET(group, name) __lte_##group##_##name
+//#define LTE_ENTRYSET(group, name, val) __lte_##group##_##name = val
+#define LTE_ENTRYADR(group, name) __lte_##group##_##name
+
+#define LTE_ENTRYREAD8(group, name) ReadU8FromText(__lte_##group##_##name)
+#define LTE_ENTRYREAD16(group, name) ReadU16FromText(__lte_##group##_##name)
+
+#define LTE_ReadU8FromGroup(group, idx) ReadU8FromText(((uint8_t*)&__start___lte_##group)+idx)
+#define LTE_ReadU16FromGroup(group, idx) ReadU16FromText(((uint8_t*)&__start___lte_##group)+idx)
 
 #define LTE_ENTRYIDX(group, name) OFS_LOW8((void *)&__lte_##group##_##name)
 

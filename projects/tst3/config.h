@@ -23,14 +23,18 @@ extern uint8_t serpkt_evt_rx;
 extern uint8_t serpkt_evt_eoftx;
 
 
+#define LNXUDPB_RX() evts_irqevt(EVTS_IRQ_LNXUDPB_RX,lnxudpb_evt_rx)
+extern uint8_t lnxudpb_evt_rx;
+
 // -- evts --
 //#define postevt evts_postByDef
 
 #define EVTS_QSIZE  16
 
-#define EVTS_IRQ_UART0RX  0
-#define EVTS_IRQ_UART0TX  1
-#define EVTS_IRQSIZE      2
+#define EVTS_IRQ_UART0RX    0
+#define EVTS_IRQ_UART0TX    1
+#define EVTS_IRQ_LNXUDPB_RX 2
+#define EVTS_IRQSIZE        3
 
 
 // -- tmr --

@@ -9,10 +9,11 @@
 #include "pkt.h"
 #include "sck.h"
 #include "pq.h"
-#include "tmr.h"
+//#include "tmrs.h"
 #include "ticp.h"
 #include "dht11.h"
 
+#include "uart.h"
 
 
 #ifdef __AVR
@@ -31,7 +32,15 @@ EVTS_DEF_FUNC(main_evt2,evt2);
 EVTS_DEF_FUNC(main_tst3,tst3);
 
 
- 
+//LTE_REFGROUP(pevts);
+//LTE_ADDENTRY(const short PROGMEM, pevts, nr1) = 0x1111;
+//LTE_ADDENTRY(const short PROGMEM, pevts, nr2) = 0x2222;
+//LTE_ADDENTRY(short, pevts, nr1 PROGMEM) = 0x1111;
+//LTE_ADDENTRY(short, pevts, nr2 PROGMEM) = 0x2222;
+//short __attribute((used,__section__("__lte_pevts"))) __lte_pevts_nr2 __attribute__((__progmem__)) = 0x2222;
+//const short __attribute((__progmem__)) __lte_pevts_nr3 = 0x3333;
+
+
 
 uint8_t r[10];
 
@@ -182,7 +191,6 @@ static void tst3(void)
 }
 
 
-
 void main(void) __attribute__((noreturn)) ;
 
 void main(void)
@@ -193,11 +201,15 @@ void main(void)
   evts_init();
   pq_Init();
   Pkt_Init();
+
+
   sck_Init();
 //  tmr_Init();
 
   ticp_Init();
   dht11_Init();
+
+//  dht11_Start(evts_DefToNr(main_tst3));
 
 
 #ifdef __AVR
@@ -211,17 +223,17 @@ void main(void)
 #if 1
 
   fh2 = sck_sck(1);
-  sck_bind(fh2,(uint8_t[2]){0,0x20});
+  sck_bind(fh2,(uint8_t[2]){0x21,0x20});
   sck_setRecvEvt(fh2, evts_DefToNr(main_evt2));//EVTOFS_MAIN+2);
 #endif
 
 
-
+//  dht11_Start(evts_DefToNr(main_tst3));
   
 //  tmr_DelayTokenMs(EVTOFS_MAIN+1,1000);
 
-  sck_SendTo(fh0, (uint8_t[2]){0,0x40}, "BOOT", 4);
-//  sck_SendTo(fh0, (uint8_t[2]){0,0x40}, "MAIN", 4);
+  sck_SendTo(fh0, (uint8_t[2]){0x40,0x40}, "BOOT", 4);
+  sck_SendTo(fh0, (uint8_t[2]){0,0x40}, "MAIN", 4);
 //  sck_SendTo(fh0, (uint8_t[2]){0,0x40}, "START", 5);
 
   while (1)

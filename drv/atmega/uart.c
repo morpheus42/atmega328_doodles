@@ -6,7 +6,7 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include "uart.h"
-
+#include "msections.h"
 
 
 
@@ -78,5 +78,21 @@ ISR(USART_UDRE_vect)
 //  
 //}
 
+
+void Uart0_Dbg_Outc( char c)
+{
+  while (!(UCSR0A & _BV(UDRE0)));
+  UDR0=c;
+}
+
+static const char dgt[] INTEXT ="0123456789ABCDEF";
+
+void Uart0_Dbg_OutHexW( uint16_t w)
+{
+  Uart0_Dbg_Outc(ReadU8FromText(dgt+((w>>12)&15)));
+  Uart0_Dbg_Outc(ReadU8FromText(dgt+((w>>8)&15)));
+  Uart0_Dbg_Outc(ReadU8FromText(dgt+((w>>4)&15)));
+  Uart0_Dbg_Outc(ReadU8FromText(dgt+((w)&15)));
+}
 
 

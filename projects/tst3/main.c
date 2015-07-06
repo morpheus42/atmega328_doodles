@@ -9,7 +9,7 @@
 #include "pkt.h"
 #include "sck.h"
 #include "pq.h"
-#include "tmr.h"
+#include "tmrs.h"
 
 #ifdef __AVR
 #include <avr/io.h>
@@ -109,7 +109,7 @@ void main(void)
   pq_Init();
   Pkt_Init();
   sck_Init();
-  tmr_Init();
+  tmrs_Init();
 
 
 #ifdef __AVR
@@ -140,14 +140,14 @@ void main(void)
     char stat;
    
     evts_exec(1);
-#if 0
+#if 1
     sleep_enable();
     sleep_cpu();
     sleep_disable();
 #endif
-    tmr_AddMs(100);
+    tmrs_AddMs(100);
         
-    //stat = sck_SendTo(fh0, (uint8_t[2]){0x51,0x52}, s, sizeof(s));
+//    stat = sck_SendTo(fh0, (uint8_t[2]){0x51,0x52}, s, sizeof(s));
 
     if (stat>=0)
     {

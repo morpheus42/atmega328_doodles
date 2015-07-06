@@ -1,17 +1,15 @@
-ifndef UTIL_EVTS_MAKEFILE
-UTIL_EVTS_MAKEFILE=1
+ifndef UTIL_STIME_MAKEFILE
+UTIL_STIME_MAKEFILE=1
 MYDIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 
-SOURCEFILES+=$(addprefix $(MYDIR)/, evts.c)
+SOURCEFILES+=$(addprefix $(MYDIR)/, stime.c)
 INCLUDEPATH+=$(MYDIR)
 SOURCEPATH+=$(MYDIR)
 MODULES+=$(MYDIR)/Makefile
 
 
-include $(DEVROOT)/util/cb/Makefile
-include $(DEVROOT)/util/ltenum/Makefile
-
+#include $(DEVROOT)/util/cb/Makefile
 
 
 ifndef INCLUDED

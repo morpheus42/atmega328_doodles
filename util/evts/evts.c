@@ -7,9 +7,8 @@
 #include "stdint.h"
 #include "ltenum.h"
 
-//#ifndef EVTS_EVTSHIFT
-// #error EVTS_EVTSHIFT not defined !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//#endif
+//#include "uart.h"
+
 
 static uint8_t Q_evt[M_CircularBufferCalcRequiredMemorySizeForBuffer(EVTS_QSIZE)];
 
@@ -28,7 +27,7 @@ void evts_post(uint8_t evt)
 {
   uint8_t base = (uint8_t)LTE_GROUPOFS(evts);
   evt-=base;
-  printf("(%x).\n",evt);
+//  printf("(%x).\n",evt);
   CircularBufWrite(Q_evt, evt+1);
 }
 
@@ -56,18 +55,22 @@ static uint8_t getEvt( void )
 
 void evts_callevt(uint8_t evt)
 {
-    evtsfun_t ** EvtFunPtrTbl = (evtsfun_t **)LTE_GROUPOFS(evts);// = evts_tablelist[evt>>EVTS_EVTSHIFT];
     evtsfun_t * FunPtr;
 
+//    Uart0_Dbg_Outc(0);
+//    Uart0_Dbg_Outc(evt);
+//    Uart0_Dbg_OutHexW(EvtFunPtrTbl);
     
-    FunPtr = *(evtsfun_t **)(((uint8_t*)EvtFunPtrTbl)+evt);
+    FunPtr = (evtsfun_t *) LTE_ReadU16FromGroup(evts, evt);
     
-//    FunPtr=EvtFunPtrTbl[evt];
-
 //    printf("%x():%x,%x.\n",evt,EvtFunPtrTbl,FunPtr);
 
+//    Uart0_Dbg_OutHexW(FunPtr);
+    
     if (FunPtr)
+    {
       FunPtr();
+    }
 }
 
 
@@ -78,7 +81,7 @@ void evts_exec(uint8_t opt)
 
   while ((evt=getEvt()))
   {
-    evt--;    
+    evt--;
     evts_callevt(evt);
 
     if ((opt&1)==0)

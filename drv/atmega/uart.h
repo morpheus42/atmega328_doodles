@@ -49,4 +49,8 @@ extern inline void Uart0_Init( void )
 }
 
 
+void Uart0_Dbg_Outc( char c);
+void Uart0_Dbg_OutHexW( uint16_t c);
+
+
 #endif //_UART_C_

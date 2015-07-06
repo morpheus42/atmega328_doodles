@@ -10,6 +10,9 @@ export DEVROOT := $(abspath ../..)
 export BUILDROOT := $(abspath .)/BuildDir
 MYPATH:=$(abspath .)
 
+include $(DEVROOT)/tools/make/Makefile.first
+
+
 PROJECT := tst3
 INCLUDEPATH:=$(MYPATH)
 SOURCEPATH:=$(MYPATH)
@@ -29,7 +32,8 @@ include $(DEVROOT)/de/avr/Makefile.cfg
 include $(DEVROOT)/drv/atmega/uart.Makefile
 include $(DEVROOT)/util/evts/Makefile
 include $(DEVROOT)/util/buf/fl.Makefile
-include $(DEVROOT)/util/tmr/Makefile
+include $(DEVROOT)/util/tmrs/Makefile
+include $(DEVROOT)/util/stime/Makefile
 include $(DEVROOT)/svc/n1/Makefile
 include $(DEVROOT)/svc/pktifs/lbd.Makefile
 include $(DEVROOT)/svc/pktifs/ser.Makefile

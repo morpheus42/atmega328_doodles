@@ -1,7 +1,8 @@
 
 
-.SUFFIXES:
-
+ifeq (X$(MAKEFILEFIRST),X)
+  $(error 'Makefile.first' has not yet been included!!!)
+endif
 
 ifeq (X$(DEVROOT),X) 
   export DEVROOT = $(CURDIR)
@@ -36,15 +37,16 @@ $(BUILDROOT)/%.d : %.c
 	@echo "Rule c->d at tools/make"
 	mkdir -p $(dir $@)
 	$(CC) -M $(CFLAGS) -MF $@ $< -MT "$(BUILDROOT)/$*.c.o $@"
-
+  
 
 
 include $(BDEPS)
 
-$(BUILDROOT)/$(PROJECT).elf: $(BOBJS)
-	$(LD) $(LDFLAGS) -o $@  $(BOBJS)
-		
-	
+$(BUILDROOT)/$(PROJECT).elf: $(BOBJS) $(LDSCRIPTS)
+	@echo LDSCRIPTS $(LDSCRIPTS)
+	$(LD) $(LDSCRIPTS) $(LDFLAGS) -o $@  $(BOBJS)
+
+
 
 .DEFAULT:
 	@echo ".DEFAULT: $@ ....."
@@ -58,6 +60,7 @@ all:$(PROJECTTARGETS)
 	@echo SourceFiles: $(SOURCEFILES)
 	@echo IncPath: $(INCLUDEPATH)
 	@echo SrcPath: $(SOURCEPATH)
+	@echo LdScripts: $(LDSCRIPTS)
 
 
 
