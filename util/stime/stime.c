@@ -16,11 +16,12 @@ void timeAddedEvt( void ) // this function should run withing 1/2 a second.
 {
   uint8_t tmpA=stime_a12>>8;
 
-  // Note: dt should stay under 0x8000. So updates need to be done within half a second.
+  // Note: Update-time (time between a12++ and the call to this function) should
+  //       be within half a second.
   if (stime_c1 & 0x80)
-  {
-    if (tmpA & 0x80)
-    { // got overflow, so add seconds
+  { // Last time we were in second half of a second.
+    if (!(tmpA & 0x80))
+    { // This time we got overflow, so add a second.
       stime_s++;
     }
   }

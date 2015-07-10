@@ -61,9 +61,9 @@ void evts_callevt(uint8_t evt)
 //    Uart0_Dbg_Outc(evt);
 //    Uart0_Dbg_OutHexW(EvtFunPtrTbl);
     
-    FunPtr = (evtsfun_t *) LTE_ReadU16FromGroup(evts, evt);
+    FunPtr = (evtsfun_t *) LTE_ReadVptrFromGroup(evts, evt);
     
-//    printf("%x():%x,%x.\n",evt,EvtFunPtrTbl,FunPtr);
+//    printf("%x:%x().\n",evt,FunPtr);
 
 //    Uart0_Dbg_OutHexW(FunPtr);
     

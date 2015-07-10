@@ -30,6 +30,7 @@ extern "C" {
 
 #define LTE_ReadU8FromGroup(group, idx) ReadU8FromText(((uint8_t*)&__start___lte_##group)+idx)
 #define LTE_ReadU16FromGroup(group, idx) ReadU16FromText(((uint8_t*)&__start___lte_##group)+idx)
+#define LTE_ReadVptrFromGroup(group, idx) ReadVptrFromText(((uint8_t*)&__start___lte_##group)+idx)
 
 #define LTE_ENTRYIDX(group, name) OFS_LOW8((void *)&__lte_##group##_##name)
 
